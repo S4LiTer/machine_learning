@@ -1,0 +1,21 @@
+PERCEPTRON
+ - MNIST dataset
+ - pouze input a output layer (velmi jednoduchá síť)
+ - perceptron hádá, jestli dané číslo je 6 nebo ne
+ - pro trénink jsem použil 2000 vzorků. Na testování potom 10000 nových vrozků
+
+ - učení pomocí zpětné šíření chyby
+    - 93% přesnost (920/1037 poznal, 8358/8963 poznal že není)
+    - Doba učení: 290 s
+ - učení pomocí brute force (ani nevím jestli je to legit technika)
+    - 93% přesnost (701/1037 poznal, 8623/8963 poznal že není)
+    - Doba učení: 80 s
+
+ - závěr: překvapilo mě, že učení pomocí nastavování jednotlivých vah
+          dosáhlo stejných výsledků za rychlejší čas. Nicméně když bude síť
+          růst, tak bude potřebna doba k naučení u brute force strategie
+          stoupan rychleji (asi)
+
+DEEP NEURAL NETWORK
+ - index 1 (784, 16, 16, 10): 93%
+ - index 2 (784, 100, 10): 
