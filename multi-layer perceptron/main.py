@@ -27,10 +27,10 @@ print("load:", time.time() - start_time, "s")
 
 
 
-nn = neural_network.NeuralNetwork([784, 16, 10])
-#nn.storeNetwork(4, "load")
-nn.Train(images[:101], labels[:101], 100, 3, 40)
-#nn.storeNetwork(4, "save")
+nn = neural_network.NeuralNetwork([784, 16, 16, 10])
+nn.storeNetwork(1, "load")
+# nn.Train(images[:101], labels[:101], 100, 3, 40)
+# nn.storeNetwork(4, "save")
 nn.Test(images[45000:55000], labels[45000:55000])
 
 

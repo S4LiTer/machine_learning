@@ -102,13 +102,13 @@ class NeuralNetwork:
             if guess_index == correct_index:
                 total_correct_raw += 1
                 total_correct[guess_index] += 1
-        """
+        
         ind = 0
         for n in total:
             tc = total_correct[ind]
             ind += 1
 
             print(f"Number {ind}: {tc}/{n} ({round((tc/n)*100)}%)")
-        """
+        
 
         print(f"Total: {total_correct_raw}/{total_raw} ({round((total_correct_raw/total_raw)*100)}%)")
