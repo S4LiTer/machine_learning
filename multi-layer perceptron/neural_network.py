@@ -1,17 +1,17 @@
-import matplotlib.pyplot as plt
+from utils import activation_functions as act_funcs
+from utils import display
 import numpy as np
-import random
 import layer
-import math
 import time
 
 class NeuralNetwork:
-    def __init__(self, neuron_count):
-        self.sigmoid = lambda x: 1/(1+(math.e**-x))
-        self.d_sigmoid = lambda x: self.sigmoid(x)*(1-self.sigmoid(x))
+    def __init__(self, neuron_count, activation_func="sigmoid"):
+        activation = act_funcs.functions[activation_func]
 
-        self.layers = [layer.Layer(neuron_count[i], neuron_count[i+1], self.sigmoid, self.d_sigmoid) for i in range(len(neuron_count)-1)]
+        self.layers = [layer.Layer(neuron_count[i], neuron_count[i+1], activation) for i in range(len(neuron_count)-1)]
 
+
+        self.graph = display.Window(1000, 450, 500)
 
     def Calculate(self, prev_layer, save_inputs = False):
         for layer in self.layers:
@@ -41,27 +41,29 @@ class NeuralNetwork:
     def Train(self, samples, labels, batch_size: int, learning_rate, gens):
         samples_count = len(samples)
 
-        for _ in range(gens):
+        for gen in range(gens):
             i = 0
 
             permutation = np.random.permutation(samples_count)
             shuffled_samples = samples[permutation]
             shuffled_labels = labels[permutation]
             
-            # start_time = time.time()
 
             while i+batch_size < samples_count:
                 batch_labels = shuffled_labels[i:i+batch_size]
 
-                # calculate predict for every item in batch (starts in i index and go through batch_size samples)
+                # calculates predict for every item in batch (starts in i index and go through batch_size samples)
+                # input values for each layer are stored and will be used in  backpropagation process
                 predicts = np.array([self.Calculate(shuffled_samples[i+batch_index], True) for batch_index in range(batch_size)])
 
 
                 self.Backpropagate(predicts, batch_labels, learning_rate)
                 i += batch_size
 
-            print("gen", _)
-            # print(f"gen {_} calculated: {round(self.CalculateLoss(samples, labels), 2)}, time: {round(time.time()-start_time, 2)}s" )
+
+            accouracy = self.GetAccouracy(samples, labels)
+            self.graph.add_point(accouracy)
+            print("gen:", gen, "accouracy:", str(accouracy)+"%")
 
 
 
@@ -79,6 +81,27 @@ class NeuralNetwork:
             total_loss += np.sum(cost, axis=0)
 
         return total_loss
+
+    def GetAccouracy(self, samples, labels):
+        start_time = time.time()
+        label_index = 0
+        total_correct = 0
+
+        for sample in samples:
+            label = labels[label_index]
+            label_index += 1
+
+            res = self.Calculate(sample)
+
+            correct_index = np.where(label == max(label))[0].astype(int)[0]
+            guess_index = np.where(res == max(res))[0].astype(int)[0]
+
+            if guess_index == correct_index:
+                total_correct += 1
+
+        total_accouracy = round(total_correct/len(labels), 4)*100
+        return total_accouracy
+        #print(f"accouracy: {total_accouracy}, time: {time.time() - start_time}")
 
 
     def Test(self, samples, labels):

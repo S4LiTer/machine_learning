@@ -4,15 +4,15 @@ import time
 import matplotlib.pyplot as plt
 
 class Layer:
-    def __init__(self, input_neuron, output_neurons, activation_func, derivation_activation):
-        self.act = activation_func
-        self.der_act = derivation_activation
+    def __init__(self, input_neuron, output_neurons, activation):
+        self.act = activation["function"]
+        self.der_act = activation["derivation"]
 
         self.weights = np.random.random((output_neurons, input_neuron))/(input_neuron**0.5)
         self.biases = np.random.random((output_neurons))
+        print(np.min(self.weights))
         self.all_inputs = []
 
-        self.qqq = 0
 
 
     def storeValues(self, order, id, action, path):
@@ -86,6 +86,7 @@ class Layer:
         if flip:
             z = z[:, None] # converts z to column
 
+        print(np.min(z))
         return z
         
 

@@ -27,13 +27,13 @@ print("load:", time.time() - start_time, "s")
 
 
 
-nn = neural_network.NeuralNetwork([784, 16, 16, 10])
-nn.storeNetwork(1, "load")
-# nn.Train(images[:101], labels[:101], 100, 3, 40)
+nn = neural_network.NeuralNetwork([784, 16, 16, 10], activation_func="relu")
+# nn.storeNetwork(1, "load")
+nn.Train(images, labels, 100, 1, 250)
 # nn.storeNetwork(4, "save")
 nn.Test(images[45000:55000], labels[45000:55000])
 
 
 """
 Jednovrstva funguje skvele, vicevrstva nefunguje vubec :(
-"""
+""" 
