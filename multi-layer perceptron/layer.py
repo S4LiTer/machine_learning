@@ -10,7 +10,6 @@ class Layer:
 
         self.weights = np.random.random((output_neurons, input_neuron))/(input_neuron**0.5)
         self.biases = np.random.random((output_neurons))
-        print(np.min(self.weights))
         self.all_inputs = []
 
 
@@ -40,6 +39,7 @@ class Layer:
         self.bp_biases = np.zeros_like(self.biases)
         input_gradients = []
         input_index = 0
+
         
         for output_gradient in output_gradient_list:
             last_input = self.all_inputs[input_index]
@@ -52,10 +52,10 @@ class Layer:
             weight_gradient = np.multiply(weight_gradient, output_gradient[:, None])
             self.bp_weights = np.add(self.bp_weights, weight_gradient)
 
-
+            
             z = self.calculate_z(last_input, flip=False)
             z = self.der_act(z)
-
+            
             biases_gradient = np.multiply(z, output_gradient)
             self.bp_biases = np.add(self.bp_biases, biases_gradient)
 
@@ -86,7 +86,6 @@ class Layer:
         if flip:
             z = z[:, None] # converts z to column
 
-        print(np.min(z))
         return z
         
 

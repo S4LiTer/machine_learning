@@ -56,7 +56,6 @@ class NeuralNetwork:
                 # input values for each layer are stored and will be used in  backpropagation process
                 predicts = np.array([self.Calculate(shuffled_samples[i+batch_index], True) for batch_index in range(batch_size)])
 
-
                 self.Backpropagate(predicts, batch_labels, learning_rate)
                 i += batch_size
 
@@ -92,7 +91,6 @@ class NeuralNetwork:
             label_index += 1
 
             res = self.Calculate(sample)
-
             correct_index = np.where(label == max(label))[0].astype(int)[0]
             guess_index = np.where(res == max(res))[0].astype(int)[0]
 
