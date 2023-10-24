@@ -1,5 +1,5 @@
-from  mnist import MNIST # 28x28
-import matplotlib.pyplot as plt
+# from  mnist import MNIST # 28x28
+# import matplotlib.pyplot as plt
 from collections import deque
 import numpy as np
 import random
@@ -170,7 +170,7 @@ def add_noise(matrix):
     return matrix
 
 
-
+"""
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -200,3 +200,5 @@ if __name__ == "__main__":
 
 
         plt.show()
+
+"""
