@@ -64,7 +64,10 @@ class DrawingApp:
         x = event.x
         y = event.y
 
-        self.set_pixel(x, y, 0, erase = True)
+        x_index = int((x / self.width)  * self.sample_width)
+        y_index = int((y / self.height) * self.sample_height)
+
+        self.set_pixel(x_index, y_index, 0, erase = True)
 
     def askAI(self):
         to_guess = self.pic.copy()
