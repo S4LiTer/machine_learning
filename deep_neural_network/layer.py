@@ -1,7 +1,6 @@
 import numpy as np
 import math
 import time
-import matplotlib.pyplot as plt
 
 class Layer:
     def __init__(self, input_neurons, output_neurons, activation):
