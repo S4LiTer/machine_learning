@@ -140,6 +140,9 @@ class NeuralNetwork:
         total_raw = len(labels)
         total_correct_raw = 0
 
+        failed_samples = []
+        failed_labels = []
+
         total = [0 for _ in range(len(labels[0]))]
         total_correct = [0 for _ in range(len(labels[0]))]
 
@@ -155,6 +158,9 @@ class NeuralNetwork:
             if guess_index == correct_index:
                 total_correct_raw += 1
                 total_correct[guess_index] += 1
+            else:
+                failed_samples.append(sample)
+                failed_labels.append(correct_index)
         
         ind = 0
         for n in total:
@@ -165,3 +171,5 @@ class NeuralNetwork:
         
 
         print(f"Total: {total_correct_raw}/{total_raw} ({round((total_correct_raw/total_raw)*100)}%)")
+
+        return failed_samples, failed_labels

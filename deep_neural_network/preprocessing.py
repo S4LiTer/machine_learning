@@ -107,7 +107,7 @@ def rotate_random(matrix):
     return rotated_matrix
 
 def scale_random(matrix):
-    scale = random.uniform(1, 0.55)
+    scale = random.uniform(1, 0.42)
 
     scaled_matrix = np.zeros(matrix.shape)
     middle_x = ( len(matrix[0])-1 ) / 2
@@ -132,6 +132,7 @@ def preprocess_array(default_array):
     start_time = time.time()
 
     for pic in array:
+        
         sample = pic.reshape(28, 28)
 
         #sample = rotate_random(sample)
@@ -139,6 +140,7 @@ def preprocess_array(default_array):
         sample = move_random(sample)
 
         sample = sample.reshape(784)
+        #sample = add_noise(sample)
 
         if not index%int(len(array)/10):
             print("Preprocessed so far:", index)
@@ -153,7 +155,7 @@ def preprocess_array(default_array):
 
 
 def add_noise(matrix):
-    count = 50
+    count = random.randint(0, 40)
     max_value = 0.2
 
     for i in range(count):
