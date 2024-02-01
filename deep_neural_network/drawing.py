@@ -182,7 +182,7 @@ class DrawingApp:
 
         self.askAI()
 
-    def create_ranking(self):
+    def create_ranking(self, ai_index = 3):
         label_text = tk.StringVar()
         label = tk.Label(self.root, textvariable=label_text, font=('Arial', 30), bg="#252525", fg="#FFFFFF")
         label_text.set("AI predicts:")
@@ -198,11 +198,9 @@ class DrawingApp:
             self.texts[i].set(f"{self.nums[i]}: 0%")
             self.labels[i].grid(row = i+1, column = 4, sticky="w", padx=30)
 
-        self.AI = neural_network.NeuralNetwork(784, plot=False)
-        self.AI.add_layer(256, "relu")
-        self.AI.add_layer(64, "relu")
-        self.AI.add_layer(10, "sigmoid")
-        self.AI.storeNetwork(3, "load")
+
+        self.AI = neural_network.NeuralNetwork(0, plot=False)
+        self.AI.storeNetwork(ai_index, "load")
 
     def test_network(self):
         mndata = MNIST("samples")

@@ -8,18 +8,22 @@ import time
 class NeuralNetwork:
     def __init__(self, input_size, plot=True):
         self.plot = plot
+
+        self.activations = []
         self.layers = []
         self.layer_sizes = [input_size]
 
         if self.plot:
             self.graph = display.Window(1000, 450, 500)
 
-    def add_layer(self, output_size, activation_func):
+    def add_layer(self, output_size: int, activation_func, optimizer="RMSprop"):
         activation = act_funcs.functions[activation_func]
 
-        new_layer = layer.Layer(self.layer_sizes[-1], output_size, activation)
+
+        new_layer = layer.Layer(self.layer_sizes[-1], output_size, activation, optimizer)
     
 
+        self.activations.append(activation_func)
         self.layers.append(new_layer)
         self.layer_sizes.append(output_size)
 
@@ -41,10 +45,42 @@ class NeuralNetwork:
 
 
     def storeNetwork(self, id, action="save", path="saved_networks/"):
+        filename = f"{path}{id}__network_config"
+        separator = ","
+
+        if action == "save":
+            conf = open(filename, "w")
+            conf.write(str(self.layer_sizes[0]) + "\n")
+            
+            index = 0
+            while index < len(self.activations):
+                conf.write(f"{self.layer_sizes[index+1]}{separator}{self.activations[index]}\n")
+                
+                index += 1
+
+            conf.close()
+        
+        else:
+            self.layers = []
+
+            conf = open(filename, "r")
+            for line in conf.readlines():
+                line = line.strip()
+                if separator not in line:
+                    self.layer_sizes = [int(line)]
+                    continue
+
+                size = int(line.split(separator)[0])
+                activation = line.split(separator)[1]
+                self.add_layer(size, activation)
+
+            conf.close()
+
         order = 0
         for layer in self.layers:
             layer.storeValues(order, id, action, path)
             order += 1
+            
 
 
     def Train(self, samples, labels, testing_samples, testing_labels, batch_size: int, learning_rate, gens):
@@ -173,3 +209,16 @@ class NeuralNetwork:
         print(f"Total: {total_correct_raw}/{total_raw} ({round((total_correct_raw/total_raw)*100)}%)")
 
         return failed_samples, failed_labels
+
+
+
+
+
+
+###### OBSOLETE FUNCTIONS
+
+    def old_storeNetwork(self, id, action="save", path="old_saved_networks/"):
+        order = 0
+        for layer in self.layers:
+            layer.old_storeValues(order, id, action, path)
+            order += 1

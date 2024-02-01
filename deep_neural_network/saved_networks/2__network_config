@@ -1,0 +1,4 @@
+784
+256,relu
+64,relu
+10,sigmoid

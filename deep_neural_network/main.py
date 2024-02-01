@@ -36,17 +36,15 @@ print("load:", time.time() - start_time, "s")
 
 
 nn = neural_network.NeuralNetwork(784)
-nn.add_layer(16, "relu")
-# nn.add_layer(64, "relu")
+nn.add_layer(128, "relu")
+nn.add_layer(64, "relu")
 nn.add_layer(10, "sigmoid")
-#nn.storeNetwork(2, "load")
 print("Network structure:", nn.layer_sizes)
 
-#images = preprocessing.preprocess_array(images)
-#testing_images = preprocessing.preprocess_array(testing_images)
-
-nn.Train(images, labels, testing_images, testing_labels, 100, 0.002, 5)
-nn.storeNetwork(4, "save")
+images = preprocessing.preprocess_array(images)
+testing_images = preprocessing.preprocess_array(testing_images)
+nn.Train(images, labels, testing_images, testing_labels, 100, 0.002, 10)
+#nn.storeNetwork(1, "save")
 
 print("\nTraining samples:")
 nn.Test(images[:10000], labels[:10000])

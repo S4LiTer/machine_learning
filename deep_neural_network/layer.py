@@ -3,7 +3,7 @@ import math
 import time
 
 class Layer:
-    def __init__(self, input_neurons, output_neurons, activation):
+    def __init__(self, input_neurons, output_neurons, activation, optimizer):
         self.act = activation["function"]
         self.der_act = activation["derivation"]
 
@@ -14,14 +14,15 @@ class Layer:
 
         self.weights_M = np.zeros((output_neurons, input_neurons))
         self.biases_M = np.zeros((output_neurons))
+
+
+        self.optimizer = optimizer
         self.beta = 0.9
 
 
-
-
     def storeValues(self, order, id, action, path):
-        name_weights = f"{path}w_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
-        name_biases = f"{path}b_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
+        name_weights = f"{path}{id}_w_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}"
+        name_biases = f"{path}{id}_b_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}"
         if action == "save":
             np.savetxt(name_weights, self.weights, delimiter=',')
             np.savetxt(name_biases, self.biases, delimiter=',')
@@ -74,7 +75,10 @@ class Layer:
         self.bp_weights = self.bp_weights/len(output_gradient_list)
         self.bp_biases = self.bp_biases/len(output_gradient_list)
 
-        self.RMSprop(learning_rate)
+        if self.optimizer == "RMSprop":
+            self.RMSprop(learning_rate)
+        else:
+            self.gradient_descent(learning_rate)
 
 
         self.all_inputs = []
@@ -124,3 +128,18 @@ class Layer:
 
         self.biases = np.subtract(self.biases, mlt)
  
+
+
+
+
+
+###### OBSOLETE FUNCTIONS
+    def old_storeValues(self, order, id, action, path):
+        name_weights = f"{path}w_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
+        name_biases = f"{path}b_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
+        if action == "save":
+            np.savetxt(name_weights, self.weights, delimiter=',')
+            np.savetxt(name_biases, self.biases, delimiter=',')
+        else:
+            self.weights = np.loadtxt(name_weights, delimiter=',')
+            self.biases = np.loadtxt(name_biases, delimiter=',')
