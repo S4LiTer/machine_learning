@@ -2,7 +2,7 @@ from utils import activation_functions as act_funcs
 from utils import display
 import preprocessing
 import numpy as np
-import layer
+import layers
 import time
 
 class NeuralNetwork:
@@ -20,7 +20,7 @@ class NeuralNetwork:
         activation = act_funcs.functions[activation_func]
 
 
-        new_layer = layer.Layer(self.layer_sizes[-1], output_size, activation, optimizer)
+        new_layer = layers.Layer(self.layer_sizes[-1], output_size, activation, optimizer)
     
 
         self.activations.append(activation_func)
