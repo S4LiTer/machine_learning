@@ -20,7 +20,7 @@ class NeuralNetwork:
         activation = act_funcs.functions[activation_func]
 
 
-        new_layer = layers.Layer(self.layer_sizes[-1], output_size, activation, optimizer)
+        new_layer = layers.FullyConnectedLayer(self.layer_sizes[-1], output_size, activation, optimizer)
     
 
         self.activations.append(activation_func)

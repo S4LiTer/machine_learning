@@ -2,7 +2,7 @@ import numpy as np
 import math
 import time
 
-class Layer:
+class FullyConnectedLayer:
     def __init__(self, input_neurons, output_neurons, activation, optimizer):
         self.act = activation["function"]
         self.der_act = activation["derivation"]
@@ -17,6 +17,8 @@ class Layer:
 
 
         self.optimizer = optimizer
+
+        # for RMSprop optimizer
         self.beta = 0.9
 
 
@@ -61,6 +63,8 @@ class Layer:
             
             z = self.calculate_z(last_input, flip=False)
             z = self.der_act(z)
+            # maybe replace with 
+            # z = z[None, :]
             
             biases_gradient = np.multiply(z, output_gradient)
             self.bp_biases = np.add(self.bp_biases, biases_gradient)
