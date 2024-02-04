@@ -1,4 +1,4 @@
 784
-256,relu
-64,relu
-10,sigmoid
+fully_connected|256|relu|RMSprop
+fully_connected|64|relu|RMSprop
+fully_connected|10|sigmoid|RMSprop

@@ -3,7 +3,7 @@ import threading
 import numpy as np
 import random
 import neural_network
-import preprocessing
+import deep_neural_network.utils.preprocessing as preprocessing
 try:
     from mnist import MNIST
     mnist_installed = True

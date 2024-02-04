@@ -3,6 +3,8 @@ import math
 import time
 
 class FullyConnectedLayer:
+    layer_type = "fully_connected"
+    
     def __init__(self, input_neurons, output_neurons, activation, optimizer):
         self.act = activation["function"]
         self.der_act = activation["derivation"]
@@ -23,14 +25,15 @@ class FullyConnectedLayer:
 
 
     def storeValues(self, order, id, action, path):
-        name_weights = f"{path}{id}_w_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}"
-        name_biases = f"{path}{id}_b_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}"
+        name_weights = f"{path}{id}_{order}_w.npy"
+        name_biases = f"{path}{id}_{order}_b.npy"
+        
         if action == "save":
-            np.savetxt(name_weights, self.weights, delimiter=',')
-            np.savetxt(name_biases, self.biases, delimiter=',')
+            np.save(name_weights, self.weights)
+            np.save(name_biases, self.biases)
         else:
-            self.weights = np.loadtxt(name_weights, delimiter=',')
-            self.biases = np.loadtxt(name_biases, delimiter=',')
+            self.weights = np.load(name_weights)
+            self.biases = np.load(name_biases)
 
     
 
@@ -132,18 +135,3 @@ class FullyConnectedLayer:
 
         self.biases = np.subtract(self.biases, mlt)
  
-
-
-
-
-
-###### OBSOLETE FUNCTIONS
-    def old_storeValues(self, order, id, action, path):
-        name_weights = f"{path}w_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
-        name_biases = f"{path}b_{self.weights.shape[0]}_{self.weights.shape[1]}_{order}_{id}"
-        if action == "save":
-            np.savetxt(name_weights, self.weights, delimiter=',')
-            np.savetxt(name_biases, self.biases, delimiter=',')
-        else:
-            self.weights = np.loadtxt(name_weights, delimiter=',')
-            self.biases = np.loadtxt(name_biases, delimiter=',')

@@ -1,6 +1,6 @@
 from  mnist import MNIST # 28x28
+from utils import preprocessing
 import matplotlib.pyplot as plt
-import preprocessing
 import neural_network
 import numpy as np
 import time
@@ -36,9 +36,9 @@ print("load:", time.time() - start_time, "s")
 
 
 nn = neural_network.NeuralNetwork(784)
-nn.add_layer(128, "relu")
-nn.add_layer(64, "relu")
-nn.add_layer(10, "sigmoid")
+nn.add_fully_connected_layer(128, "relu")
+nn.add_fully_connected_layer(64, "relu")
+nn.add_fully_connected_layer(10, "sigmoid")
 print("Network structure:", nn.layer_sizes)
 
 images = preprocessing.preprocess_array(images)

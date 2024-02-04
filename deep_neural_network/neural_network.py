@@ -1,31 +1,34 @@
 from utils import activation_functions as act_funcs
+from utils import preprocessing
 from utils import display
-import preprocessing
 import numpy as np
 import layers
 import time
+import json
 
 class NeuralNetwork:
     def __init__(self, input_size, plot=True):
         self.plot = plot
 
         self.activations = []
+        self.optimizers = []
         self.layers = []
         self.layer_sizes = [input_size]
 
         if self.plot:
             self.graph = display.Window(1000, 450, 500)
 
-    def add_layer(self, output_size: int, activation_func, optimizer="RMSprop"):
+    def add_fully_connected_layer(self, output_size: int, activation_func, optimizer="RMSprop"):
         activation = act_funcs.functions[activation_func]
 
 
         new_layer = layers.FullyConnectedLayer(self.layer_sizes[-1], output_size, activation, optimizer)
     
 
-        self.activations.append(activation_func)
         self.layers.append(new_layer)
         self.layer_sizes.append(output_size)
+        self.activations.append(activation_func)
+        self.optimizers.append(optimizer)
 
     def Calculate(self, prev_layer, save_inputs = False):
         for layer in self.layers:
@@ -44,9 +47,8 @@ class NeuralNetwork:
             i -= 1
 
 
-    def storeNetwork(self, id, action="save", path="saved_networks/"):
+    def storeNetwork(self, id, action="save", path="saved_networks/", separator="|"):
         filename = f"{path}{id}__network_config"
-        separator = ","
 
         if action == "save":
             conf = open(filename, "w")
@@ -54,7 +56,7 @@ class NeuralNetwork:
             
             index = 0
             while index < len(self.activations):
-                conf.write(f"{self.layer_sizes[index+1]}{separator}{self.activations[index]}\n")
+                conf.write(f"{self.layers[index].layer_type}{separator}{self.layer_sizes[index+1]}{separator}{self.activations[index]}{separator}{self.layers[index].optimizer}\n")
                 
                 index += 1
 
@@ -70,9 +72,7 @@ class NeuralNetwork:
                     self.layer_sizes = [int(line)]
                     continue
 
-                size = int(line.split(separator)[0])
-                activation = line.split(separator)[1]
-                self.add_layer(size, activation)
+                self.load_layer(line, separator)
 
             conf.close()
 
@@ -81,6 +81,20 @@ class NeuralNetwork:
             layer.storeValues(order, id, action, path)
             order += 1
             
+
+
+    def load_layer(self, data, separator):
+        type = data.split(separator)[0]
+
+        if type == layers.fully_connected.FullyConnectedLayer.layer_type:
+            size = int(data.split(separator)[1])
+            activation = data.split(separator)[2]
+            optimizer = data.split(separator)[3]
+
+            self.add_fully_connected_layer(size, activation, optimizer)
+
+        else:
+            print("[ERROR] Invalid layer type")
 
 
     def Train(self, samples, labels, testing_samples, testing_labels, batch_size: int, learning_rate, gens):
@@ -213,12 +227,3 @@ class NeuralNetwork:
 
 
 
-
-
-###### OBSOLETE FUNCTIONS
-
-    def old_storeNetwork(self, id, action="save", path="old_saved_networks/"):
-        order = 0
-        for layer in self.layers:
-            layer.old_storeValues(order, id, action, path)
-            order += 1
