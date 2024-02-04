@@ -3,28 +3,30 @@ import math
 import time
 
 class FullyConnectedLayer:
-    layer_type = "fully_connected"
-    
-    def __init__(self, input_neurons, output_neurons, activation, optimizer):
+    def __init__(self, input_neurons: int, output_neurons: int, activation, optimizer: str):
         self.act = activation["function"]
         self.der_act = activation["derivation"]
+
+        self.output_size = output_neurons
 
         limit = math.sqrt(6.0/float(input_neurons))
         self.weights = np.random.uniform(low=-limit, high=limit, size=(output_neurons, input_neurons))
         self.biases = np.random.random((output_neurons))
-        self.all_inputs = []
 
         self.weights_M = np.zeros((output_neurons, input_neurons))
         self.biases_M = np.zeros((output_neurons))
 
 
+        self.all_inputs = []
         self.optimizer = optimizer
+
+        self.layer_data = {"layer_type": "fully_connected", "output_size": output_neurons, "activation": activation["name"], "optimizer": optimizer}
 
         # for RMSprop optimizer
         self.beta = 0.9
 
 
-    def storeValues(self, order, id, action, path):
+    def storeValues(self, order: int, id: int, action: str, path: str):
         name_weights = f"{path}{id}_{order}_w.npy"
         name_biases = f"{path}{id}_{order}_b.npy"
         
@@ -37,7 +39,7 @@ class FullyConnectedLayer:
 
     
 
-    def predict(self, input_neurons, save_inputs = False):
+    def forward_pass(self, input_neurons: np.ndarray, save_inputs = False) -> np.ndarray:
         if save_inputs:
             self.all_inputs.append(input_neurons)
             
@@ -45,7 +47,7 @@ class FullyConnectedLayer:
         return self.act(z)
     
 
-    def adjust(self, output_gradient_list, learning_rate: float):
+    def backward_pass(self, output_gradient_list, learning_rate: float):
         self.bp_weights = np.zeros_like(self.weights)
         self.bp_biases = np.zeros_like(self.biases)
         input_gradients = []
@@ -92,7 +94,7 @@ class FullyConnectedLayer:
         return input_gradients
 
 
-    def calculate_z(self, prev_layer, flip=False):
+    def calculate_z(self, prev_layer: np.ndarray, flip=False) -> np.ndarray:
         # sketchy AH sektor...
         product = np.dot(self.weights, prev_layer)
         z = np.add(product, self.biases)
@@ -107,12 +109,12 @@ class FullyConnectedLayer:
 ##### DESCENT FUNCTIONS
 
 
-    def gradient_descent(self, learning_rate):
+    def gradient_descent(self, learning_rate: float):
         self.weights = np.subtract(self.weights, self.bp_weights*learning_rate)
         self.biases = np.subtract(self.biases, self.bp_biases*learning_rate)
 
     
-    def RMSprop(self, learning_rate):
+    def RMSprop(self, learning_rate: float):
         self.weights_M = np.add(self.beta*self.weights_M, (1-self.beta)* np.power(self.bp_weights, 2))
 
         non_zero_M = self.weights_M.copy()

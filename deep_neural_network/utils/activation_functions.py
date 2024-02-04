@@ -3,9 +3,12 @@ import numpy as np
 
 
 functions  = {
-    "sigmoid": {"function"  : lambda x: sigmoid(x), 
-                "derivation": lambda x: sigmoid_d(x)},
+    "sigmoid": {
+        "name"      : "sigmoid",
+        "function"  : lambda x: sigmoid(x), 
+        "derivation": lambda x: sigmoid_d(x)},
     "relu": {
+        "name"      : "relu",
         "function"  : lambda x: relu(x),
         "derivation": lambda x: relu_d(x)}
 }

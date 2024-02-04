@@ -4,9 +4,17 @@ import neural_network
 from mnist import MNIST
 import numpy as np
 import layers
+import json
 import time
 
 
+"""
+test_input = np.round(np.random.random((3, 6, 6)) * 20)
+
+pool = layers.PoolingLayer((3, 6, 6), (2, 2))
+res = pool.forward_pass(test_input)
+print(test_input)
+print(res)
 
 start_time = time.time()
 mndata = MNIST("samples")
@@ -30,8 +38,7 @@ test_gradient = [np.random.rand(5, 28, 28)]
 
 bc = conv2.adjust(test_gradient, 1)
 
-
-"""
+conv2.storeValues(0, 0, "save", "")
 
 
 

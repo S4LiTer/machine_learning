@@ -1,3 +1,17 @@
-784
-fully_connected|16|relu|RMSprop
-fully_connected|10|sigmoid|RMSprop
+{
+  "network_input": 784,
+  "layers": [
+    {
+      "layer_type": "fully_connected",
+      "output_size": 16,
+      "activation": "relu",
+      "optimizer": "RMSprop"
+    },
+    {
+      "layer_type": "fully_connected",
+      "output_size": 10,
+      "activation": "sigmoid",
+      "optimizer": "RMSprop"
+    }
+  ]
+}

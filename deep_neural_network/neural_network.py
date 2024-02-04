@@ -10,69 +10,66 @@ class NeuralNetwork:
     def __init__(self, input_size, plot=True):
         self.plot = plot
 
-        self.activations = []
-        self.optimizers = []
         self.layers = []
-        self.layer_sizes = [input_size]
+        self.network_input = input_size
 
         if self.plot:
             self.graph = display.Window(1000, 450, 500)
 
     def add_fully_connected_layer(self, output_size: int, activation_func, optimizer="RMSprop"):
         activation = act_funcs.functions[activation_func]
+        
+        input_size = self.network_input
+        if len(self.layers) > 0:
+            input_size = self.layers[-1].output_size
 
-
-        new_layer = layers.FullyConnectedLayer(self.layer_sizes[-1], output_size, activation, optimizer)
+        new_layer = layers.FullyConnectedLayer(input_size, output_size, activation, optimizer)
     
 
         self.layers.append(new_layer)
-        self.layer_sizes.append(output_size)
-        self.activations.append(activation_func)
-        self.optimizers.append(optimizer)
 
     def Calculate(self, prev_layer, save_inputs = False):
         for layer in self.layers:
-            prev_layer = layer.predict(prev_layer, save_inputs)
+            prev_layer = layer.forward_pass(prev_layer, save_inputs)
 
         return prev_layer
     
 
-    def Backpropagate(self, last_output, expected_output, learning_rate: float):
+    def Backpropagate(self, last_output: np.ndarray, expected_output: np.ndarray, learning_rate: float):
         gradient = 2*np.subtract(last_output, expected_output)
 
 
         i = len(self.layers)-1
         while i >= 0:
-            gradient = self.layers[i].adjust(gradient, learning_rate)
+            gradient = self.layers[i].backward_pass(gradient, learning_rate)
             i -= 1
 
 
-    def storeNetwork(self, id, action="save", path="saved_networks/", separator="|"):
+    def storeNetwork(self, id: int, action="save", path="saved_networks/"):
         filename = f"{path}{id}__network_config"
 
         if action == "save":
-            conf = open(filename, "w")
-            conf.write(str(self.layer_sizes[0]) + "\n")
+            data = {"network_input": self.layer_sizes[0], "layers": []}
             
             index = 0
-            while index < len(self.activations):
-                conf.write(f"{self.layers[index].layer_type}{separator}{self.layer_sizes[index+1]}{separator}{self.activations[index]}{separator}{self.layers[index].optimizer}\n")
-                
+            for layer in self.layers:
+                data["layers"].append(layer.layer_data)
                 index += 1
+                
+            with open(filename, 'w') as file:
+                json.dump(data, file, indent=2)
 
-            conf.close()
         
         else:
             self.layers = []
 
             conf = open(filename, "r")
-            for line in conf.readlines():
-                line = line.strip()
-                if separator not in line:
-                    self.layer_sizes = [int(line)]
-                    continue
+            data = json.load(conf) 
 
-                self.load_layer(line, separator)
+            self.network_input = data["network_input"]
+
+            for layer in data["layers"]:
+                self.load_layer(layer)
 
             conf.close()
 
@@ -82,22 +79,19 @@ class NeuralNetwork:
             order += 1
             
 
-
-    def load_layer(self, data, separator):
-        type = data.split(separator)[0]
-
-        if type == layers.fully_connected.FullyConnectedLayer.layer_type:
-            size = int(data.split(separator)[1])
-            activation = data.split(separator)[2]
-            optimizer = data.split(separator)[3]
-
-            self.add_fully_connected_layer(size, activation, optimizer)
-
-        else:
-            print("[ERROR] Invalid layer type")
+    def load_layer(self, layer_data: dict):
+        layer_type = layer_data["layer_type"]
+        
+        if layer_type == "fully_connected":
+            output = layer_data["output_size"]
+            activation = layer_data["activation"]
+            optimizer = layer_data["optimizer"]
+            self.add_fully_connected_layer(output, activation, optimizer)
 
 
-    def Train(self, samples, labels, testing_samples, testing_labels, batch_size: int, learning_rate, gens):
+
+
+    def Train(self, samples, labels, testing_samples, testing_labels, batch_size: int, learning_rate: float, gens: int):
         samples_count = len(samples)
 
         for gen in range(gens):
@@ -129,14 +123,14 @@ class NeuralNetwork:
 
 
             gen_total_time = time.time() - gen_start_time
-            testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:2000], testing_labels[:2000])
-            accouracy, loss = self.GetAccouracy(samples[:2000], labels[:2000])
-
             print("gen:", str(gen) + ", time to calculate: ", round(gen_total_time, 1), "s")
-            print("accouracy:", str(round(accouracy, 2))+"%, loss:", str(round(loss, 0)))
-            print("Testing accouracy:", str(round(testing_accouracy, 2))+"%, testing loss:", str(round(testing_loss, 0)))
-            
             if self.plot:
+                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:2000], testing_labels[:2000])
+                accouracy, loss = self.GetAccouracy(samples[:2000], labels[:2000])
+
+                print("accouracy:", str(round(accouracy, 2))+"%, loss:", str(round(loss, 0)))
+                print("Testing accouracy:", str(round(testing_accouracy, 2))+"%, testing loss:", str(round(testing_loss, 0)))
+            
                 self.graph.add_point(accouracy, 0)
                 self.graph.add_point(testing_accouracy, 1)
 

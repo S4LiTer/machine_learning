@@ -1,9 +1,9 @@
-import tkinter as tk
-import threading
-import numpy as np
-import random
+from utils import preprocessing
 import neural_network
-import deep_neural_network.utils.preprocessing as preprocessing
+import tkinter as tk
+import numpy as np
+import threading
+import random
 try:
     from mnist import MNIST
     mnist_installed = True

@@ -9,7 +9,6 @@ class conv_types:
 
 
 class ConvolutionalLayer:
-    layer_type = "convolutional"
 
     def __init__(self, input_size: tuple, kernel_size: tuple, kernel_count: int, correlation_type: str, activation, optimizer = "None"):
         self.act = activation["function"]
@@ -36,21 +35,24 @@ class ConvolutionalLayer:
         self.past_inputs = []
         self.past_z = []
 
+        self.layer_data = {"layer_type": "convolutional", "output_size": self.output_size, 
+                           "kernel_size": kernel_size, "kernel_count": kernel_count, 
+                           "activation": activation["name"], "optimizer": optimizer}
 
-    def storeValues(self, order, id, action, path):
-        print("[ERROR] this is not implemented yet")
-        return
-        name_kernels = f"{path}{id}_k_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}.npy"
-        name_biases = f"{path}{id}_b_{order}_{self.weights.shape[1]}_{self.weights.shape[0]}.npy"
+
+    def storeValues(self, order: int, id: int, action: str, path: str):
+        name_kernels = f"{path}{id}_{order}_k.npy"
+        name_biases = f"{path}{id}_{order}_b.npy"
+        
         if action == "save":
-            np.save(name_kernels, self.kernels, delimiter=',')
-            np.save(name_biases, self.biases, delimiter=',')
+            np.save(name_kernels, self.kernels)
+            np.save(name_biases, self.biases)
         else:
-            self.kernels = np.loadtxt(name_kernels, delimiter=',')
-            self.biases = np.loadtxt(name_biases, delimiter=',')
+            self.weights = np.load(name_kernels)
+            self.biases = np.load(name_biases)
 
 
-    def predict(self, input_matrix, save_inputs = False):
+    def forward_pass(self, input_matrix: np.ndarray, save_inputs = False):
         if input_matrix.shape != self.input_size:
             print("[ERROR] invalid input shape to predict function")
             print(self.input_size, input_matrix.shape)
@@ -65,7 +67,7 @@ class ConvolutionalLayer:
         return self.act(z)
 
     
-    def adjust(self, output_gradient_list, learning_rate):
+    def backward_pass(self, output_gradient_list, learning_rate: float):
         self.bp_biases = np.zeros(self.output_size)
         self.bp_kernels = np.zeros_like(self.kernels)
         
@@ -135,7 +137,7 @@ class ConvolutionalLayer:
         return gradient
 
 
-    def calculate_z(self, input_matrix):
+    def calculate_z(self, input_matrix: np.ndarray):
         """
         This function calculates z (result before activation function)
         Returns: 3D numpy array with size matching defined output_size
@@ -161,7 +163,7 @@ class ConvolutionalLayer:
         z = np.add(z, self.biases)
         return z
 
-    def correlate(self, input_matrix, kernel, correlation_type):
+    def correlate(self, input_matrix: np.ndarray, kernel: np.ndarray, correlation_type: str):
         """
         This function is used to correlate two equally deep matrixes (kernel and input_matrix)
         Returns: 3D numpy array with same depth and width and height defined by correlation
@@ -194,7 +196,7 @@ class ConvolutionalLayer:
 
         return conv_result
 
-    def calculate_output_size(self, input_size, used_kernel_size, correlation_type):
+    def calculate_output_size(self, input_size: tuple, used_kernel_size: tuple, correlation_type: str) -> tuple:
         """
         Calculates matrix size after correlation
         Reuturns: tuple with 2D size of matrix after correlation.
@@ -214,12 +216,12 @@ class ConvolutionalLayer:
 
 
 ##### DESCENT FUNCTIONS
-    def gradient_descent(self, learning_rate):
+    def gradient_descent(self, learning_rate: float):
         self.weights = np.subtract(self.kernels, self.bp_kernels*learning_rate)
         self.biases = np.subtract(self.biases, self.bp_biases*learning_rate)
 
 
-    def RMSprop(self, learning_rate):
+    def RMSprop(self, learning_rate: float):
         self.biases_M = np.add(self.beta*self.biases_M, (1-self.beta)* np.power(self.bp_biases, 2) )
 
         mlt = learning_rate/(np.sqrt(self.biases_M.copy()) + 0.00001)
