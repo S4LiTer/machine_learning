@@ -3,7 +3,7 @@ import time
 
 
 class FlatteningLayer:
-    def __init__(self, input_size) -> None:
+    def __init__(self, input_size: tuple) -> None:
         
         self.input_size = input_size
 
@@ -12,12 +12,12 @@ class FlatteningLayer:
             self.output_size *= dimesion
 
 
-        self.layer_data = {"layer_type": "fully_connected", "output_size": self.output_size}
+        self.layer_data = {"layer_type": "flattening", "output_size": self.output_size}
 
     
     def storeValues(self, order, id, action, path):
         """
-        there are no valkues but this function still has to be here because it is called from NeuralNetowrk class
+        there are no values but this function still has to be here because it is called from NeuralNetowrk class
         """
         
         return

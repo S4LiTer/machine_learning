@@ -37,6 +37,7 @@ class ConvolutionalLayer:
 
         self.layer_data = {"layer_type": "convolutional", "output_size": self.output_size, 
                            "kernel_size": kernel_size, "kernel_count": kernel_count, 
+                           "correlation_type": correlation_type,
                            "activation": activation["name"], "optimizer": optimizer}
 
 
@@ -48,7 +49,7 @@ class ConvolutionalLayer:
             np.save(name_kernels, self.kernels)
             np.save(name_biases, self.biases)
         else:
-            self.weights = np.load(name_kernels)
+            self.kernels = np.load(name_kernels)
             self.biases = np.load(name_biases)
 
 
@@ -239,10 +240,3 @@ class ConvolutionalLayer:
         self.kernels = np.subtract(self.kernels, mlt)
 
 
-
-
-"""
-self.kernels[0][0] = np.array([[1, 1, -1, -1], [1, 1, -1, -1], [1, 1, -1, -1], [1, 1, -1, -1]])
-self.kernels[1][0] = np.array([[1, 1, 1, 1], [1, 1, 1, 1], [-1, -1, -1, -1], [-1, -1, -1, -1]])
-self.kernels[2][0] = np.array([[-1, 1, -1, -1], [-1, 1, -1, -1], [-1, 1, 1, 1], [-1, -1, -1, -1]])
-"""

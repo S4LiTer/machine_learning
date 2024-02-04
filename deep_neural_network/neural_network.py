@@ -16,7 +16,8 @@ class NeuralNetwork:
         if self.plot:
             self.graph = display.Window(1000, 450, 500)
 
-    def add_fully_connected_layer(self, output_size: int, activation_func, optimizer="RMSprop"):
+
+    def add_fully_connected_layer(self, output_size: int, activation_func="relu", optimizer="RMSprop"):
         activation = act_funcs.functions[activation_func]
         
         input_size = self.network_input
@@ -27,6 +28,37 @@ class NeuralNetwork:
     
 
         self.layers.append(new_layer)
+
+    def add_flattening_layer(self):
+
+        input_size = self.network_input
+        if len(self.layers) > 0:
+            input_size = self.layers[-1].output_size
+
+        new_layer = layers.FlatteningLayer(input_size)
+
+        self.layers.append(new_layer)
+
+    def add_pooling_layer(self, pool_size: tuple, pooling_type=layers.pooling_types.max_pooling):
+        input_size = self.network_input
+        if len(self.layers) > 0:
+            input_size = self.layers[-1].output_size
+
+        new_layer = layers.PoolingLayer(input_size, pool_size, pooling_type)
+
+        self.layers.append(new_layer)
+
+    def add_convolutional_layer(self, kernel_size:tuple, kernel_count:int, correlation_type = layers.conv_types.valid, activation_func = "relu", optimizer="RMSprop"):
+        activation = act_funcs.functions[activation_func]
+        
+        input_size = self.network_input
+        if len(self.layers) > 0:
+            input_size = self.layers[-1].output_size
+
+        new_layer = layers.ConvolutionalLayer(input_size, kernel_size, kernel_count, correlation_type, activation, optimizer)
+
+        self.layers.append(new_layer)
+
 
     def Calculate(self, prev_layer, save_inputs = False):
         for layer in self.layers:
@@ -49,10 +81,11 @@ class NeuralNetwork:
         filename = f"{path}{id}__network_config"
 
         if action == "save":
-            data = {"network_input": self.layer_sizes[0], "layers": []}
+            data = {"network_input": self.network_input, "layers": []}
             
             index = 0
-            for layer in self.layers:
+            for order, layer in enumerate(self.layers):
+                layer.storeValues(order, id, action, path)
                 data["layers"].append(layer.layer_data)
                 index += 1
                 
@@ -67,9 +100,13 @@ class NeuralNetwork:
             data = json.load(conf) 
 
             self.network_input = data["network_input"]
+            if type(self.network_input) == list:
+                self.network_input = tuple(self.network_input)
 
-            for layer in data["layers"]:
+            for order, layer in enumerate(data["layers"]):
                 self.load_layer(layer)
+
+                self.layers[-1].storeValues(order, id, action, path)
 
             conf.close()
 
@@ -88,6 +125,22 @@ class NeuralNetwork:
             optimizer = layer_data["optimizer"]
             self.add_fully_connected_layer(output, activation, optimizer)
 
+        elif layer_type == "flattening":
+            self.add_flattening_layer()
+
+        elif layer_type == "pooling":
+            pool_size = layer_data["pool_size"]
+            pooling_type = layer_data["pooling_type"]
+            self.add_pooling_layer(pool_size, pooling_type)
+
+        elif layer_type == "convolutional":
+            kernel_size = tuple(layer_data["kernel_size"])
+            kernel_count = layer_data["kernel_count"]
+            correlation_type = layer_data["correlation_type"]
+            activation = layer_data["activation"]
+            optimizer = layer_data["optimizer"]
+
+            self.add_convolutional_layer(kernel_size, kernel_count, correlation_type, activation, optimizer)
 
 
 

@@ -1,0 +1,48 @@
+{
+  "network_input": [
+    1,
+    28,
+    28
+  ],
+  "layers": [
+    {
+      "layer_type": "convolutional",
+      "output_size": [
+        3,
+        25,
+        25
+      ],
+      "kernel_size": [
+        4,
+        4
+      ],
+      "kernel_count": 3,
+      "correlation_type": "valid",
+      "activation": "relu",
+      "optimizer": "RMSprop"
+    },
+    {
+      "layer_type": "pooling",
+      "output_size": [
+        3,
+        12,
+        12
+      ],
+      "pool_size": [
+        2,
+        2
+      ],
+      "pooling_type": "max"
+    },
+    {
+      "layer_type": "flattening",
+      "output_size": 432
+    },
+    {
+      "layer_type": "fully_connected",
+      "output_size": 10,
+      "activation": "sigmoid",
+      "optimizer": "RMSprop"
+    }
+  ]
+}
