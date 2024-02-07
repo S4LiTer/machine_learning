@@ -14,7 +14,7 @@ class NeuralNetwork:
         self.network_input = input_size
 
         if self.plot:
-            self.graph = display.Window(1000, 450, 500)
+            self.graph = display.Window(1000, 450, 50)
 
 
     def add_fully_connected_layer(self, output_size: int, activation_func="relu", optimizer="RMSprop"):
@@ -65,16 +65,7 @@ class NeuralNetwork:
             prev_layer = layer.forward_pass(prev_layer, save_inputs)
 
         return prev_layer
-    
 
-    def Backpropagate(self, last_output: np.ndarray, expected_output: np.ndarray, learning_rate: float):
-        gradient = 2*np.subtract(last_output, expected_output)
-
-
-        i = len(self.layers)-1
-        while i >= 0:
-            gradient = self.layers[i].backward_pass(gradient, learning_rate)
-            i -= 1
 
 
     def storeNetwork(self, id: int, action="save", path="saved_networks/"):
@@ -142,31 +133,38 @@ class NeuralNetwork:
 
             self.add_convolutional_layer(kernel_size, kernel_count, correlation_type, activation, optimizer)
 
+    def Backpropagate(self, last_output: np.ndarray, expected_output: np.ndarray, learning_rate: float):
+        gradient = 2*np.subtract(last_output, expected_output)
+        
+        i = len(self.layers)-1
+        while i >= 0:
+            gradient = self.layers[i].backward_pass(gradient, learning_rate)
+            i -= 1
 
-
-    def Train(self, samples, labels, testing_samples, testing_labels, batch_size: int, learning_rate: float, gens: int):
+    def Train(self, samples: np.ndarray, labels, testing_samples, testing_labels, batch_size: int, learning_rate: float, gens: int):
         samples_count = len(samples)
+        noised_samples = samples.copy()
 
         for gen in range(gens):
             """
-            if gen%4 == 0:
+            if gen%5 == 0:
                 noised_samples = samples.copy()
-                for sample in noised_samples:
-                    preprocessing.add_noise(sample)
+                for i, sample in enumerate(noised_samples):
+                    noised_samples[i] = preprocessing.add_noise(sample)
+        
             """
-
             i = 0
 
             gen_start_time = time.time()
 
             permutation = np.random.permutation(samples_count)
-            shuffled_samples = samples[permutation]
+            shuffled_samples = noised_samples[permutation]
             shuffled_labels = labels[permutation]
             
 
             while i+batch_size < samples_count:
                 batch_labels = shuffled_labels[i:i+batch_size]
-
+                
                 # calculates predict for every item in batch (starts in i index and go through batch_size samples)
                 # input values for each layer are stored and will be used in  backpropagation process
                 predicts = np.array([self.Calculate(shuffled_samples[i+batch_index], True) for batch_index in range(batch_size)])
@@ -178,8 +176,8 @@ class NeuralNetwork:
             gen_total_time = time.time() - gen_start_time
             print("gen:", str(gen) + ", time to calculate: ", round(gen_total_time, 1), "s")
             if self.plot:
-                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:2000], testing_labels[:2000])
-                accouracy, loss = self.GetAccouracy(samples[:2000], labels[:2000])
+                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:1000], testing_labels[:1000])
+                accouracy, loss = self.GetAccouracy(samples[:1000], labels[:1000])
 
                 print("accouracy:", str(round(accouracy, 2))+"%, loss:", str(round(loss, 0)))
                 print("Testing accouracy:", str(round(testing_accouracy, 2))+"%, testing loss:", str(round(testing_loss, 0)))

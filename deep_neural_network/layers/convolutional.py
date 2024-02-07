@@ -1,7 +1,7 @@
 import scipy.signal as sp
+import matplotlib.pyplot as plt
 import numpy as np
 import math
-import time
 
 class conv_types:
     same = "same"
@@ -16,7 +16,7 @@ class ConvolutionalLayer:
 
         self.correlation_type = correlation_type
         self.optimizer = optimizer
-        self.beta = 0.9
+        self.beta = 0.6
 
         self.input_size = input_size
         self.output_size = (kernel_count,) + self.calculate_output_size(input_size[1:], kernel_size, self.correlation_type)
@@ -54,6 +54,7 @@ class ConvolutionalLayer:
 
 
     def forward_pass(self, input_matrix: np.ndarray, save_inputs = False):
+        
         if input_matrix.shape != self.input_size:
             print("[ERROR] invalid input shape to predict function")
             print(self.input_size, input_matrix.shape)
@@ -64,6 +65,7 @@ class ConvolutionalLayer:
         if save_inputs:
             self.past_z.append(z)
             self.past_inputs.append(input_matrix)
+            
 
         return self.act(z)
 
@@ -71,33 +73,30 @@ class ConvolutionalLayer:
     def backward_pass(self, output_gradient_list, learning_rate: float):
         self.bp_biases = np.zeros(self.output_size)
         self.bp_kernels = np.zeros_like(self.kernels)
-        
-        input_gradients = []
+        input_gradients = np.zeros((output_gradient_list.shape[0],) + self.input_size)
 
-        output_index = 0
         
         # iterates through all recived output gradients and connects then with stored inputs/z
         # it sums all calculated gradients from discrete samples
-        for output_gradient in output_gradient_list:
+        for output_index, output_gradient in enumerate(output_gradient_list):
             z_gradient = np.multiply(self.past_z[output_index], output_gradient)
 
             self.bp_biases = np.add(self.bp_biases, z_gradient)
 
             kernel_index = 0
 
-            input_gradients.append(np.zeros(self.input_size))
             while kernel_index < self.kernel_count:
                 self.bp_kernels[kernel_index] = np.add(self.bp_kernels[kernel_index], self.calculate_kernel_gradient(z_gradient[kernel_index], kernel_index, output_index))
                 
-                input_gradients[-1] = np.add(input_gradients[-1], self.calculate_input_gradient(z_gradient[kernel_index], kernel_index))
+                input_gradients[output_index] = np.add(input_gradients[output_index], self.calculate_input_gradient(z_gradient[kernel_index], kernel_index))
                 kernel_index += 1
 
 
-            output_index += 1
+
             
         self.bp_biases = self.bp_biases/len(output_gradient_list)
         self.bp_kernels = self.bp_kernels/len(output_gradient_list)
-
+        
         if self.optimizer == "RMSprop":
             self.RMSprop(learning_rate)
         else:
@@ -236,7 +235,44 @@ class ConvolutionalLayer:
 
         mlt = learning_rate/(np.sqrt(self.kernels_M.copy()) + 0.00001)
         mlt = np.multiply(mlt, self.bp_kernels)
-
+        
         self.kernels = np.subtract(self.kernels, mlt)
+        
+        """
+        fig, axs = plt.subplots(3, 3, figsize=(10, 3))
+
+        # Display each image on a subplot
+        axs[0][0].imshow(self.bp_kernels[0][0], cmap='gray')
+        axs[0][0].set_title('Image 1')
+
+        axs[0][1].imshow(self.bp_kernels[1][0], cmap='gray')
+        axs[0][1].set_title('Image 2')
+
+        axs[0][2].imshow(self.bp_kernels[2][0], cmap='gray')
+        axs[0][2].set_title('Image 3')
+
+        axs[1][0].imshow(self.kernels[0][0], cmap='gray')
+        axs[1][0].set_title('Imag 1')
+
+        axs[1][1].imshow(self.kernels[1][0], cmap='gray')
+        axs[1][1].set_title('Imag 2')
+
+        axs[1][2].imshow(self.kernels[2][0], cmap='gray')
+        axs[1][2].set_title('Imag 3')
+
+        # Display each image on a subplot
+        axs[2][0].imshow(mlt[0][0], cmap='gray')
+        axs[2][0].set_title('mlt 1')
+
+        axs[2][1].imshow(mlt[1][0], cmap='gray')
+        axs[2][1].set_title('mlt 2')
+
+        axs[2][2].imshow(mlt[2][0], cmap='gray')
+        axs[2][2].set_title('mlt 3')
+
+        plt.show()
+        """
+
+
 
 

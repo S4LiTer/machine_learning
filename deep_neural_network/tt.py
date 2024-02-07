@@ -1,20 +1,16 @@
-from utils import activation_functions as act_funcs
-import matplotlib.pyplot as plt
 import neural_network
-from mnist import MNIST
-import numpy as np
 import layers
-import json
-import time
+import matplotlib.pyplot as plt
+from utils import activation_functions
+import numpy as np
 
+fcl = layers.FullyConnectedLayer(80, 10, activation=activation_functions.functions["sigmoid"], optimizer="")
 
-nn = neural_network.NeuralNetwork((1, 28, 28), False)
-nn.storeNetwork(1, "load")
+test = np.random.random((80))
 
-print(nn.layers[0].kernels)
+fcl.forward_pass(test, save_inputs=True)
 
+test = np.random.random((10))
 
-plt.imshow(nn.layers[0].kernels[1][0], cmap='gray')  # Use cmap='gray' for grayscale images
-plt.title('Sample Image')
-plt.colorbar()  # Display colorbar if needed
-plt.show()
+print(test.shape)
+fcl.backward_pass(test, 0.1)

@@ -3,6 +3,7 @@ from utils import preprocessing
 import matplotlib.pyplot as plt
 import neural_network
 import numpy as np
+import layers
 import time
 
 
@@ -25,8 +26,8 @@ testing_labels = np.array(testing_labels)
 
 _images, _labels = mndata.load_training()
 images = np.array(_images)/255
-
 images = images.reshape((images.shape[0], ) + (1, 28, 28))
+
 
 labels = []
 for label in _labels:
@@ -37,22 +38,18 @@ labels = np.array(labels)
 print("load:", time.time() - start_time, "s")
 
 
-nn = neural_network.NeuralNetwork((1, 28, 28))
-nn.storeNetwork(1, "load")
-"""
-nn.add_convolutional_layer((8, 8), 4)
+
+
+nn = neural_network.NeuralNetwork((1, 28, 28), False)
+nn.add_convolutional_layer((3, 3), 1)
 nn.add_pooling_layer((2, 2))
 nn.add_flattening_layer()
 nn.add_fully_connected_layer(10, "sigmoid")
-"""
 
-# images = preprocessing.preprocess_array(images)
-# testing_images = preprocessing.preprocess_array(testing_images)
-nn.Train(images[:10000], labels[:10000], testing_images, testing_labels, 100, 0.002, 4)
-nn.storeNetwork(1, "save")
+nn.Train(images[:3000], labels[:3000], testing_images, testing_labels, 100, 0.004, 8)
 
 print("\nTraining samples:")
-nn.Test(images[:10000], labels[:10000])
+nn.Test(images[5000:6000], labels[5000:6000])
 
 print("\nTesting samples:")
-nn.Test(testing_images, testing_labels)
+nn.Test(testing_images[:1000], testing_labels[:1000])

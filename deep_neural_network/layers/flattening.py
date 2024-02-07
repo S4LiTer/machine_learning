@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import time
 
 
@@ -27,9 +28,5 @@ class FlatteningLayer:
         return input_matrix.reshape((self.output_size))
     
     def backward_pass(self, output_gradient_list, learning_rate=0):
-        processed = []
-
-        for output_gradient in output_gradient_list:
-            processed.append(output_gradient.reshape(self.input_size))
-
-        return processed
+        return output_gradient_list.reshape((output_gradient_list.shape[0],) + self.input_size)
+        

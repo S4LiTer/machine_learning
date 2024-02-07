@@ -1,6 +1,4 @@
 import numpy as np
-import math
-import time
 
 
 class pooling_types:
@@ -55,14 +53,16 @@ class PoolingLayer:
 
                 self.indicies.append(indicies)
 
+
             return result
         
     def backward_pass(self, output_gradient_list, learning_rate:float):
         if output_gradient_list[0].shape != self.output_size:
             print("[ERROR] Invalid input to backward pass")
             return
+        
 
-        input_gradients = []
+        input_gradients = np.zeros((output_gradient_list.shape[0],) + (self.input_size))
 
         for output_index, output_gradient in enumerate(output_gradient_list):
             input_gradient = np.zeros(self.input_size)
@@ -82,10 +82,8 @@ class PoolingLayer:
             
 
 
-            input_gradients.append(input_gradient)
+            input_gradients[output_index] = input_gradient
 
-
-        
 
         return input_gradients
     

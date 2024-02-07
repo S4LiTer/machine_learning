@@ -1,6 +1,3 @@
-# from  mnist import MNIST # 28x28
-# import matplotlib.pyplot as plt
-from collections import deque
 import numpy as np
 import random
 import math
@@ -8,48 +5,42 @@ import time
 
 
 def move_random(matrix):
+    summed_matrix = np.sum(matrix, 0)
+
+
     low = 0
     index = 0
-    while matrix.sum(0)[index] == 0:
+    while summed_matrix.sum(0)[index] == 0:
         low -= 1
         index += 1
 
     top = 0
-    index = len(matrix.sum(0))-1
-    while index >= 0 and matrix.sum(0)[index] == 0:
+    index = len(summed_matrix.sum(0))-1
+    while index >= 0 and summed_matrix.sum(0)[index] == 0:
         top += 1
         index -= 1
     
     if top > 0:
         x_axis = random.randrange(low, top, 1)
-
-        rotation = deque([i for i in range(matrix.shape[1])])
-        rotation.rotate(x_axis)
-
-        matrix = matrix[:, rotation]
-
+        matrix = np.roll(matrix, x_axis, axis=2)
 
 
     low = 0
     index = 0
-    while matrix.sum(1)[index] == 0:
+    while summed_matrix.sum(1)[index] == 0:
         low -= 1
         index += 1
 
     top = 0
-    index = len(matrix.sum(1))-1
-    while index >= 0 and matrix.sum(1)[index] == 0:
+    index = len(summed_matrix.sum(1))-1
+    while index >= 0 and summed_matrix.sum(1)[index] == 0:
         top += 1
         index -= 1
 
     if top > 1:
         y_axis = random.randrange(low, top, 1)
 
-        rotation = deque([i for i in range(matrix.shape[0])])
-        rotation.rotate(y_axis)
-
-        matrix = matrix[rotation, :]
-
+        matrix = np.roll(matrix, y_axis, axis=1)
 
     return matrix
 
@@ -106,68 +97,62 @@ def rotate_random(matrix):
 
     return rotated_matrix
 
-def scale_random(matrix):
-    scale = random.uniform(1, 0.42)
+def scale_random(matrix, min_scale=0.46):
+    scale = random.uniform(1, min_scale)
 
     scaled_matrix = np.zeros(matrix.shape)
-    middle_x = ( len(matrix[0])-1 ) / 2
-    middle_y = ( len(matrix) -  1 ) / 2
+    middle_x = ( matrix.shape[-1]-1 ) / 2
+    middle_y = ( matrix.shape[-2]-1 ) / 2
 
-    for y in range(matrix.shape[0]):
+    for y in range(matrix.shape[-2]):
         new_y = round((y - middle_y) * scale + middle_y)
         
-        for x in range(matrix.shape[1]):
+        for x in range(matrix.shape[-1]):
             new_x = round((x - middle_x) * scale + middle_x)
 
-            pixel = matrix[y][x]
-            scaled_matrix[new_y][new_x] = pixel
+            pixel = matrix[0, y, x]
+            scaled_matrix[0, new_y, new_x] = pixel
 
     return scaled_matrix
 
 def preprocess_array(default_array):
-    array = default_array.copy()
-    index = 0
+    output = np.empty_like(default_array)
 
-    print(f"Preprocessing {len(array)} images.")
+    print(f"Preprocessing {output.shape[0]} images.")
     start_time = time.time()
 
-    for pic in array:
-        
-        sample = pic.reshape(28, 28)
+    for index, pic in enumerate(default_array):
 
-        #sample = rotate_random(sample)
-        sample = scale_random(sample)
-        sample = move_random(sample)
+        pic = scale_random(pic)
+        pic = move_random(pic)
+        #pic = add_noise(pic)
 
-        sample = sample.reshape(784)
-        #sample = add_noise(sample)
-
-        if not index%int(len(array)/10):
+        if not index%1000:
             print("Preprocessed so far:", index)
 
-        array[index] = sample
-        index += 1
+        output[index] = pic
 
     print("Preprocessing finished")
     print("total time:", round(time.time() - start_time, 2), "s")
 
-    return array 
+    return output 
 
 
-def add_noise(matrix):
-    count = random.randint(0, 40)
-    max_value = 0.2
+def add_noise(matrix, max_value=0.1, max_count=80):
+    channel = random.randint(0, matrix.shape[0]-1)
+    column = random.randint(0, matrix.shape[1]-1)
+    row = random.randint(0, matrix.shape[2]-1)
+
+    count = random.randint(0, max_count)
 
     for i in range(count):
-        pos = random.randrange(0, len(matrix))
+        channel = random.randint(0, matrix.shape[0]-1)
+        column = random.randint(0, matrix.shape[1]-1)
+        row = random.randint(0, matrix.shape[2]-1)
 
-        to_add = random.uniform(0, max_value)
+        noise = random.random() * max_value
 
-        if matrix[pos] + to_add > 1:
-            matrix[pos] = 1
-            continue
-
-        matrix[pos] += to_add
+        matrix[channel, column, row] += noise
 
     return matrix
 

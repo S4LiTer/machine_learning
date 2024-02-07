@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import time
 
 class FullyConnectedLayer:
     def __init__(self, input_neurons: int, output_neurons: int, activation, optimizer: str):
@@ -8,6 +7,7 @@ class FullyConnectedLayer:
         self.der_act = activation["derivation"]
 
         self.output_size = output_neurons
+        self.input_size = input_neurons
 
         limit = math.sqrt(6.0/float(input_neurons))
         self.weights = np.random.uniform(low=-limit, high=limit, size=(output_neurons, input_neurons))
@@ -43,46 +43,36 @@ class FullyConnectedLayer:
         if save_inputs:
             self.all_inputs.append(input_neurons)
             
+            
         z = self.calculate_z(input_neurons, flip=False)
+
         return self.act(z)
     
 
     def backward_pass(self, output_gradient_list, learning_rate: float):
         self.bp_weights = np.zeros_like(self.weights)
         self.bp_biases = np.zeros_like(self.biases)
-        input_gradients = []
-        input_index = 0
+        input_gradients = np.zeros((output_gradient_list.shape[0], self.input_size))
 
-        
-        for output_gradient in output_gradient_list:
+
+        for input_index, output_gradient in enumerate(output_gradient_list):
             last_input = self.all_inputs[input_index]
-            input_index += 1
 
             z = self.calculate_z(last_input, flip=True)
             z = self.der_act(z)
+            z= np.multiply(z, output_gradient)
 
-            weight_gradient = np.multiply(last_input, z)
-            weight_gradient = np.multiply(weight_gradient, output_gradient[:, None])
+            weight_gradient = np.multiply(last_input, z[None, :].T)
             self.bp_weights = np.add(self.bp_weights, weight_gradient)
 
-            
-            z = self.calculate_z(last_input, flip=False)
-            z = self.der_act(z)
-            # maybe replace with 
-            # z = z[None, :]
-            
-            biases_gradient = np.multiply(z, output_gradient)
-            self.bp_biases = np.add(self.bp_biases, biases_gradient)
+            self.bp_biases = np.add(self.bp_biases, z)
 
-
-            prod = np.multiply(z, output_gradient)[:, None]
-            input_gradient = np.multiply(self.weights, prod)
-            input_gradient = np.sum(input_gradient, axis=0)
-            input_gradients.append(input_gradient)
+            input_gradients[input_index] = np.dot(self.weights.T, z)
 
 
         self.bp_weights = self.bp_weights/len(output_gradient_list)
         self.bp_biases = self.bp_biases/len(output_gradient_list)
+        self.all_inputs = []
 
         if self.optimizer == "RMSprop":
             self.RMSprop(learning_rate)
@@ -90,7 +80,6 @@ class FullyConnectedLayer:
             self.gradient_descent(learning_rate)
 
 
-        self.all_inputs = []
         return input_gradients
 
 
@@ -99,9 +88,6 @@ class FullyConnectedLayer:
         product = np.dot(self.weights, prev_layer)
         z = np.add(product, self.biases)
         
-        if flip:
-            z = z[:, None] # converts z to column
-
         return z
         
 
