@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from utils import activation_functions
 import numpy as np
 
-pool = layers.PoolingLayer((2, 4, 4), (2, 2))
+pool = layers.PoolingLayer((2, 4, 4), (2, 2), pooling_type="avg")
 
 tt = np.random.random((2, 4, 4))
 res = pool.forward_pass(tt, True)

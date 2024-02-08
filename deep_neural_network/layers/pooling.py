@@ -66,9 +66,13 @@ class PoolingLayer:
         output_gradient_list = output_gradient_list.reshape((-1))
         input_gradient = np.zeros((output_gradient_list.shape[0], self.pool_size[0]*self.pool_size[1]))
 
-        for index, indicie in enumerate(self.indicies):
-            input_gradient[index, int(indicie)] = output_gradient_list[index]
-        
+        for index, grad in enumerate(output_gradient_list):
+            if self.pooling_type == pooling_types.max_pooling:
+                input_gradient[index, int(self.indicies[index])] = grad
+            else:
+                input_gradient[index] = input_gradient[index] + grad/(self.pool_size[0]*self.pool_size[1])
+
+
         input_gradient = input_gradient.reshape(grad_shape + self.pool_size)
         input_gradient = input_gradient[:, :, :, :, ::-1, :]
         input_gradient = np.rot90(input_gradient, k=-1, axes=(4, 3))
