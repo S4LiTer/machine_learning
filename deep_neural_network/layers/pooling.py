@@ -15,7 +15,7 @@ class PoolingLayer:
 
         self.stride = pooling_size
 
-        self.indicies = []
+        self.indicies = np.array([])
 
         self.layer_data = {"layer_type": "pooling", "output_size": self.output_size, "pool_size": self.pool_size, "pooling_type": pooling_type}
 
@@ -51,7 +51,7 @@ class PoolingLayer:
                 rotated_array = rotated_array.reshape(self.output_size + (self.pool_size[0]*self.pool_size[1],))
                 indicies = np.argmax(rotated_array, axis=-1)
 
-                self.indicies.append(indicies)
+                self.indicies = np.append(self.indicies, indicies)
 
 
             return result
@@ -60,8 +60,28 @@ class PoolingLayer:
         if output_gradient_list[0].shape != self.output_size:
             print("[ERROR] Invalid input to backward pass")
             return
-        
+    
+        grad_shape = output_gradient_list.shape
 
+        output_gradient_list = output_gradient_list.reshape((-1))
+        input_gradient = np.zeros((output_gradient_list.shape[0], self.pool_size[0]*self.pool_size[1]))
+
+        for index, indicie in enumerate(self.indicies):
+            input_gradient[index, int(indicie)] = output_gradient_list[index]
+        
+        input_gradient = input_gradient.reshape(grad_shape + self.pool_size)
+        input_gradient = input_gradient[:, :, :, :, ::-1, :]
+        input_gradient = np.rot90(input_gradient, k=-1, axes=(4, 3))
+        input_gradient = input_gradient.reshape((grad_shape[0], ) + self.input_size)
+        return input_gradient
+    
+
+
+
+
+
+
+        """
         input_gradients = np.zeros((output_gradient_list.shape[0],) + (self.input_size))
 
         for output_index, output_gradient in enumerate(output_gradient_list):
@@ -86,4 +106,5 @@ class PoolingLayer:
 
 
         return input_gradients
+        """
     
