@@ -25,7 +25,14 @@ class FlatteningLayer:
     
 
     def forward_pass(self, input_matrix: np.ndarray, save_inputs=False) -> np.ndarray:
-        return input_matrix.reshape((self.output_size))
+        if len(input_matrix.shape) == len(self.input_size):
+            return input_matrix.reshape((self.output_size))
+        
+        elif len(input_matrix.shape) == len(self.input_size) + 1:
+            return input_matrix.reshape((input_matrix.shape[0], self.output_size))
+        
+        else:
+            print("[ERROR] Invalid input to flattening layer")
     
     def backward_pass(self, output_gradient_list, learning_rate=0):
         return output_gradient_list.reshape((output_gradient_list.shape[0],) + self.input_size)

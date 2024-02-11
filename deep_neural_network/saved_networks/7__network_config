@@ -1,0 +1,83 @@
+{
+  "network_input": [
+    1,
+    28,
+    28
+  ],
+  "layers": [
+    {
+      "layer_type": "convolutional",
+      "output_size": [
+        16,
+        22,
+        22
+      ],
+      "kernel_size": [
+        7,
+        7
+      ],
+      "kernel_count": 16,
+      "correlation_type": "valid",
+      "activation": "relu",
+      "optimizer": "RMSprop"
+    },
+    {
+      "layer_type": "pooling",
+      "output_size": [
+        16,
+        11,
+        11
+      ],
+      "pool_size": [
+        2,
+        2
+      ],
+      "pooling_type": "max"
+    },
+    {
+      "layer_type": "convolutional",
+      "output_size": [
+        8,
+        10,
+        10
+      ],
+      "kernel_size": [
+        2,
+        2
+      ],
+      "kernel_count": 8,
+      "correlation_type": "valid",
+      "activation": "relu",
+      "optimizer": "RMSprop"
+    },
+    {
+      "layer_type": "pooling",
+      "output_size": [
+        8,
+        5,
+        5
+      ],
+      "pool_size": [
+        2,
+        2
+      ],
+      "pooling_type": "max"
+    },
+    {
+      "layer_type": "flattening",
+      "output_size": 200
+    },
+    {
+      "layer_type": "fully_connected",
+      "output_size": 128,
+      "activation": "relu",
+      "optimizer": "RMSprop"
+    },
+    {
+      "layer_type": "fully_connected",
+      "output_size": 10,
+      "activation": "softmax",
+      "optimizer": "RMSprop"
+    }
+  ]
+}

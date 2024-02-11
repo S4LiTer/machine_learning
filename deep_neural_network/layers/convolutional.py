@@ -1,6 +1,7 @@
 import scipy.signal as sp
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 import math
 
 class conv_types:
@@ -16,7 +17,7 @@ class ConvolutionalLayer:
 
         self.correlation_type = correlation_type
         self.optimizer = optimizer
-        self.beta = 0.6
+        self.beta = 0.85
 
         self.input_size = input_size
         self.output_size = (kernel_count,) + self.calculate_output_size(input_size[1:], kernel_size, self.correlation_type)
@@ -24,7 +25,7 @@ class ConvolutionalLayer:
         self.kernel_size = (input_size[0],) + kernel_size
         self.kernel_count = kernel_count
 
-        limit = math.sqrt(2/input_size[0])
+        limit = math.sqrt(2/(self.kernel_size[0] * self.kernel_size[1] * self.kernel_size[2]))
         self.kernels = np.random.normal(0, limit, (kernel_count,) + self.kernel_size)
 
         self.biases = np.zeros(self.output_size)
@@ -32,8 +33,8 @@ class ConvolutionalLayer:
         self.kernels_M = np.zeros((kernel_count,) + self.kernel_size)
         self.biases_M = np.zeros(self.output_size)
  
-        self.past_inputs = []
-        self.past_z = []
+        self.past_inputs = np.array([])
+        self.past_z = np.array([])
 
         self.layer_data = {"layer_type": "convolutional", "output_size": self.output_size, 
                            "kernel_size": kernel_size, "kernel_count": kernel_count, 
@@ -54,20 +55,50 @@ class ConvolutionalLayer:
 
 
     def forward_pass(self, input_matrix: np.ndarray, save_inputs = False):
-        
-        if input_matrix.shape != self.input_size:
-            print("[ERROR] invalid input shape to predict function")
-            print(self.input_size, input_matrix.shape)
-            exit
 
-        z = self.calculate_z(input_matrix)
+        if len(input_matrix.shape) == len(self.input_size):
+            input_matrix = input_matrix.reshape((1,) + self.input_size)
+
+        if input_matrix.shape[1:] != self.input_size:
+            print(f"[ERROR] invalid input shape to predict function (expected: {self.input_size}, given: {input_matrix.shape[1:]})")
+
+
+        output = np.zeros((input_matrix.shape[0], ) + self.output_size)
 
         if save_inputs:
-            self.past_z.append(z)
-            self.past_inputs.append(input_matrix)
-            
+            self.past_z = np.zeros((input_matrix.shape[0], ) + self.output_size)
+            self.past_inputs = input_matrix
 
-        return self.act(z)
+        for index, input_mat in enumerate(input_matrix):
+            z = self.calculate_z(input_mat)
+
+            if save_inputs:
+                self.past_z[index] = z
+                
+            output[index] = self.act(z)
+
+        return output
+        fig, axs = plt.subplots(3, 3, figsize=(10, 3))
+
+        # Display each image on a subplot
+        axs[0][0].imshow(input_matrix[0][0], cmap='gray')
+
+        axs[0][1].imshow(output[0][0], cmap='gray')
+
+        axs[0][2].imshow(output[0][1], cmap='gray')
+
+        axs[1][0].imshow(output[0][2], cmap='gray')
+
+        axs[1][1].imshow(output[0][3], cmap='gray')
+        axs[1][2].imshow(self.kernels[0][0], cmap='gray')
+
+        axs[2][0].imshow(self.kernels[1][0], cmap='gray')
+
+        axs[2][1].imshow(self.kernels[2][0], cmap='gray')
+
+        axs[2][2].imshow(self.kernels[3][0], cmap='gray')
+
+        plt.show()
 
     
     def backward_pass(self, output_gradient_list, learning_rate: float):
@@ -75,7 +106,6 @@ class ConvolutionalLayer:
         self.bp_kernels = np.zeros_like(self.kernels)
         input_gradients = np.zeros((output_gradient_list.shape[0],) + self.input_size)
 
-        
         # iterates through all recived output gradients and connects then with stored inputs/z
         # it sums all calculated gradients from discrete samples
         for output_index, output_gradient in enumerate(output_gradient_list):
@@ -103,8 +133,9 @@ class ConvolutionalLayer:
             self.gradient_descent(learning_rate)
 
 
-        self.past_inputs = []
-        self.past_z = []
+        self.past_inputs = np.array([])
+        self.past_z = np.array([])
+
         return input_gradients
 
 
@@ -161,6 +192,7 @@ class ConvolutionalLayer:
             kernel_index += 1
 
         z = np.add(z, self.biases)
+
         return z
 
     def correlate(self, input_matrix: np.ndarray, kernel: np.ndarray, correlation_type: str):
@@ -180,7 +212,6 @@ class ConvolutionalLayer:
         # defines 3D array for one kernel correlation output (z axis is defined by input depth)
         conv_result = np.empty(result_size)
         index = 0
-        kernel_depth = 0
         
         # iterates through all inputs
         while index < self.input_size[0]:
@@ -221,7 +252,7 @@ class ConvolutionalLayer:
         self.biases = np.subtract(self.biases, self.bp_biases*learning_rate)
 
 
-    def RMSprop(self, learning_rate: float):
+    def RMSprop(self, learning_rate: float): 
         self.biases_M = np.add(self.beta*self.biases_M, (1-self.beta)* np.power(self.bp_biases, 2) )
 
         mlt = learning_rate/(np.sqrt(self.biases_M.copy()) + 0.00001)
@@ -238,40 +269,30 @@ class ConvolutionalLayer:
         
         self.kernels = np.subtract(self.kernels, mlt)
         
-        """
+        
+        return
         fig, axs = plt.subplots(3, 3, figsize=(10, 3))
 
         # Display each image on a subplot
-        axs[0][0].imshow(self.bp_kernels[0][0], cmap='gray')
-        axs[0][0].set_title('Image 1')
+        axs[0][0].imshow(self.kernels[0][0], cmap='gray')
 
-        axs[0][1].imshow(self.bp_kernels[1][0], cmap='gray')
-        axs[0][1].set_title('Image 2')
+        axs[0][1].imshow(self.kernels[1][0], cmap='gray')
 
-        axs[0][2].imshow(self.bp_kernels[2][0], cmap='gray')
-        axs[0][2].set_title('Image 3')
+        axs[0][2].imshow(self.kernels[2][0], cmap='gray')
 
-        axs[1][0].imshow(self.kernels[0][0], cmap='gray')
-        axs[1][0].set_title('Imag 1')
+        axs[1][0].imshow(self.kernels[3][0], cmap='gray')
 
-        axs[1][1].imshow(self.kernels[1][0], cmap='gray')
-        axs[1][1].set_title('Imag 2')
+        """
+        axs[1][1].imshow(self.kernels[4][0], cmap='gray')
+        axs[1][2].imshow(self.kernels[5][0], cmap='gray')
 
-        axs[1][2].imshow(self.kernels[2][0], cmap='gray')
-        axs[1][2].set_title('Imag 3')
+        axs[2][0].imshow(self.kernels[6][0], cmap='gray')
 
-        # Display each image on a subplot
-        axs[2][0].imshow(mlt[0][0], cmap='gray')
-        axs[2][0].set_title('mlt 1')
+        axs[2][1].imshow(self.kernels[7][0], cmap='gray')
 
-        axs[2][1].imshow(mlt[1][0], cmap='gray')
-        axs[2][1].set_title('mlt 2')
-
-        axs[2][2].imshow(mlt[2][0], cmap='gray')
-        axs[2][2].set_title('mlt 3')
+        axs[2][2].imshow(self.kernels[0][0], cmap='gray')"""
 
         plt.show()
-        """
 
 
 

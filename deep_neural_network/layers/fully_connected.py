@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import time
 
 class FullyConnectedLayer:
     def __init__(self, input_neurons: int, output_neurons: int, activation, optimizer: str):
@@ -41,12 +42,14 @@ class FullyConnectedLayer:
 
     def forward_pass(self, input_neurons: np.ndarray, save_inputs = False) -> np.ndarray:
         if save_inputs:
-            self.all_inputs.append(input_neurons)
-            
-            
-        z = self.calculate_z(input_neurons, flip=False)
+            self.all_inputs = input_neurons
 
-        return self.act(z)
+        z = self.calculate_z(input_neurons, flip=False)
+        result = self.act(z)
+        if len(result.shape) == 2 and result.shape[0] == 1:
+            result = result.reshape(-1)
+        return result
+
     
 
     def backward_pass(self, output_gradient_list, learning_rate: float):
@@ -57,10 +60,13 @@ class FullyConnectedLayer:
 
         for input_index, output_gradient in enumerate(output_gradient_list):
             last_input = self.all_inputs[input_index]
-
-            z = self.calculate_z(last_input, flip=True)
-            z = self.der_act(z)
-            z= np.multiply(z, output_gradient)
+            z = None
+            if self.layer_data["activation"] != "softmax":
+                z = self.calculate_z(last_input, flip=True)
+                z = self.der_act(z)
+                z= np.multiply(z, output_gradient)
+            else:
+                z = output_gradient
 
             weight_gradient = np.multiply(last_input, z[None, :].T)
             self.bp_weights = np.add(self.bp_weights, weight_gradient)
@@ -79,16 +85,19 @@ class FullyConnectedLayer:
         else:
             self.gradient_descent(learning_rate)
 
-
         return input_gradients
 
 
     def calculate_z(self, prev_layer: np.ndarray, flip=False) -> np.ndarray:
         # sketchy AH sektor...
-        product = np.dot(self.weights, prev_layer)
-        z = np.add(product, self.biases)
-        
-        return z
+        if len(prev_layer.shape) == 1:
+            product = np.dot(self.weights, prev_layer)
+            z = np.add(product, self.biases)
+            return z
+        elif len(prev_layer.shape) == 2:
+            product = np.dot(prev_layer, self.weights.T)
+            z = np.add(product, self.biases)
+            return z
         
 
 

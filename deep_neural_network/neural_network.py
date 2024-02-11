@@ -120,7 +120,7 @@ class NeuralNetwork:
             self.add_flattening_layer()
 
         elif layer_type == "pooling":
-            pool_size = layer_data["pool_size"]
+            pool_size = tuple(layer_data["pool_size"])
             pooling_type = layer_data["pooling_type"]
             self.add_pooling_layer(pool_size, pooling_type)
 
@@ -134,12 +134,13 @@ class NeuralNetwork:
             self.add_convolutional_layer(kernel_size, kernel_count, correlation_type, activation, optimizer)
 
     def Backpropagate(self, last_output: np.ndarray, expected_output: np.ndarray, learning_rate: float):
-        gradient = 2*np.subtract(last_output, expected_output)
-        
+        gradient = last_output - expected_output
+
         i = len(self.layers)-1
         while i >= 0:
             gradient = self.layers[i].backward_pass(gradient, learning_rate)
             i -= 1
+
 
     def Train(self, samples: np.ndarray, labels, testing_samples, testing_labels, batch_size: int, learning_rate: float, gens: int):
         samples_count = len(samples)
@@ -148,10 +149,13 @@ class NeuralNetwork:
         for gen in range(gens):
             """
             if gen%5 == 0:
+                st = time.time()
+                print("adding noise to all samples")
                 noised_samples = samples.copy()
                 for i, sample in enumerate(noised_samples):
-                    noised_samples[i] = preprocessing.add_noise(sample)
-        
+                    noised_samples[i] = preprocessing.add_noise(sample, max_value=0.075, max_count=60)
+
+                print(f"noise added in {round(time.time() - st)} s")
             """
             i = 0
 
@@ -160,24 +164,46 @@ class NeuralNetwork:
             permutation = np.random.permutation(samples_count)
             shuffled_samples = noised_samples[permutation]
             shuffled_labels = labels[permutation]
-            
 
+            batch_number = 0
+            batch_count = samples_count//batch_size
+            debug_interval = batch_count//30
+            batch_time = time.time()
+
+            
             while i+batch_size < samples_count:
                 batch_labels = shuffled_labels[i:i+batch_size]
+                batch_samples = shuffled_samples[i:i+batch_size]
                 
                 # calculates predict for every item in batch (starts in i index and go through batch_size samples)
                 # input values for each layer are stored and will be used in  backpropagation process
-                predicts = np.array([self.Calculate(shuffled_samples[i+batch_index], True) for batch_index in range(batch_size)])
+                
+                predicts = self.Calculate(batch_samples, True)
 
                 self.Backpropagate(predicts, batch_labels, learning_rate)
                 i += batch_size
+                batch_number += 1
+
+                if not batch_number % debug_interval:
+                    print("-"*64)
+                    print(f"progress: {batch_number}/{batch_count}")
+                    print(f"{debug_interval} batches completed in: {round(time.time()-batch_time, 2)}s (gen {gen})")
+                    epoch_finish = round(((batch_count-batch_number)//debug_interval) * (time.time()-batch_time))
+                    finish = (round((batch_count//debug_interval) * (time.time()-batch_time)) * (gens-gen-1)) + epoch_finish
+                    print(f"estimated epoch finish in {epoch_finish} s")
+                    print(f"estimated total finish in {finish} s")
+                    accuracy = np.mean(np.equal(np.argmax(predicts, axis=1), np.argmax(batch_labels, axis=1))) * 100
+                    print(f"batch accouracy: {round(accuracy, 2)}%")
+                    
+                    batch_time = time.time()
+
 
 
             gen_total_time = time.time() - gen_start_time
             print("gen:", str(gen) + ", time to calculate: ", round(gen_total_time, 1), "s")
             if self.plot:
-                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:1000], testing_labels[:1000])
-                accouracy, loss = self.GetAccouracy(samples[:1000], labels[:1000])
+                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:4000], testing_labels[:4000])
+                accouracy, loss = self.GetAccouracy(samples[:4000], labels[:4000])
 
                 print("accouracy:", str(round(accouracy, 2))+"%, loss:", str(round(loss, 0)))
                 print("Testing accouracy:", str(round(testing_accouracy, 2))+"%, testing loss:", str(round(testing_loss, 0)))
@@ -193,12 +219,11 @@ class NeuralNetwork:
 
         index = 0
         for sample in samples:
-            label = labels[index]
+            y = labels[index]
             index += 1
 
             res = self.Calculate(sample)
-            cost = np.subtract(res, label)**2
-            total_loss += np.sum(cost, axis=0)
+            total_loss -= np.sum(y * np.log(res))
 
         return total_loss
 
@@ -230,43 +255,29 @@ class NeuralNetwork:
 
 
     def Test(self, samples, labels):
-        label_index = 0
-
-        total_raw = len(labels)
-        total_correct_raw = 0
+        predicts = self.Calculate(samples)
+        correct = 0
 
         failed_samples = []
         failed_labels = []
+        total_output_classes = np.zeros((labels.shape[1:]))
+        correct_output_classes = np.zeros((labels.shape[1:]))
 
-        total = [0 for _ in range(len(labels[0]))]
-        total_correct = [0 for _ in range(len(labels[0]))]
 
-        for sample in samples:
-            label = labels[label_index]
-            label_index += 1
+        for label, predict in zip(predicts, labels):
+            total_output_classes[np.argmax(label)] += 1
 
-            res = self.Calculate(sample)
-            correct_index = np.where(label == max(label))[0].astype(int)[0]
-            guess_index = np.where(res == max(res))[0].astype(int)[0]
+            if np.argmax(label) == np.argmax(predict):
+                correct_output_classes[np.argmax(label)] += 1
+                continue
+            
+            failed_samples.append(predict)
+            failed_labels.append(label)
 
-            total[correct_index] += 1
-            if guess_index == correct_index:
-                total_correct_raw += 1
-                total_correct[guess_index] += 1
-            else:
-                failed_samples.append(sample)
-                failed_labels.append(correct_index)
+        for index, output_class in enumerate(total_output_classes):
+            print(f"Number {index}: {round((correct_output_classes[index]/output_class)*100, 1)}% ({int(correct_output_classes[index])}/{int(output_class)})")
         
-        ind = 0
-        for n in total:
-            tc = total_correct[ind]
-            ind += 1
-
-            print(f"Number {ind}: {tc}/{n} ({round((tc/n)*100)}%)")
-        
-
-        print(f"Total: {total_correct_raw}/{total_raw} ({round((total_correct_raw/total_raw)*100)}%)")
-
+        print(f"total accouracy: {round((np.sum(correct_output_classes)/np.sum(total_output_classes))*100, 1)}% ({int(np.sum(correct_output_classes))}/{int(np.sum(total_output_classes))})")
         return failed_samples, failed_labels
 
 

@@ -40,16 +40,24 @@ print("load:", time.time() - start_time, "s")
 
 
 
-nn = neural_network.NeuralNetwork((1, 28, 28), False)
-nn.add_convolutional_layer((3, 3), 1)
+nn = neural_network.NeuralNetwork((1, 28, 28), True)
+
+nn.add_convolutional_layer((3, 3), 16)
+nn.add_pooling_layer((2, 2))
+nn.add_convolutional_layer((6, 6), 16)
 nn.add_pooling_layer((2, 2))
 nn.add_flattening_layer()
-nn.add_fully_connected_layer(10, "sigmoid")
+nn.add_fully_connected_layer(128, "relu")
+nn.add_fully_connected_layer(10, "softmax")
 
-nn.Train(images[:3000], labels[:3000], testing_images, testing_labels, 100, 0.004, 8)
+images = preprocessing.preprocess_array(images)
+testing_images = preprocessing.preprocess_array(testing_images)
 
+
+nn.Train(images, labels, testing_images, testing_labels, 100, 0.002, 3)
+nn.storeNetwork(9)
 print("\nTraining samples:")
-nn.Test(images[5000:6000], labels[5000:6000])
+nn.Test(images[:10000], labels[:10000])
 
 print("\nTesting samples:")
-nn.Test(testing_images[:1000], testing_labels[:1000])
+nn.Test(testing_images, testing_labels)
