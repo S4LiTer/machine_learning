@@ -41,12 +41,15 @@ class DrawingApp:
             continue
 
         if testing_samples:
+            # Aktivuje tlačítko pro zobrazení náhodného prvku testovacích dat pokud jsou trénovací data definována
             self.show_random_btn["state"] = tk.ACTIVE
             self.test_network(testing_samples)
         
 
 
     def start_window(self):
+        # Funkce vytvoří okno a všechny grafiecké elementy
+
         self.root = tk.Tk()
         self.root.geometry(f"{self.height+250}x{self.width+50}")
         self.root.title("Learning progression")
@@ -75,14 +78,15 @@ class DrawingApp:
         self.root.mainloop()
 
     def clear(self):
-        # plt.imshow(self.pic)
-        # plt.show()
+        # Fukce vyčístí kanvas
 
         self.selected_label = None
         self.canvas.delete("all")
         self.pic = np.zeros((self.sample_width, self.sample_height))
 
     def draw(self, event):
+        # Funkce reaguje na zmáčknutí levého tlačítka myši. Vezme její pozici a pixeli v okolí nabarví
+
         x = event.x
         y = event.y
 
@@ -95,6 +99,8 @@ class DrawingApp:
         self.askAI()
 
     def erase(self, event):
+        # Funkce reaguje na zmáčknutí pravého tlačítka myši. vynuluje pixel na kterém se myš nachází
+
         x = event.x
         y = event.y
 
@@ -104,6 +110,9 @@ class DrawingApp:
         self.set_pixel(x_index, y_index, 0, erase = True)
 
     def askAI(self):
+        # Funkce vkládá kanvas do neuronové sítě, která si tipne o jaký znak se jedná
+
+
         to_guess = self.pic.copy()
         to_guess = to_guess.reshape(self.AI.network_input)
         predict = self.AI.Calculate(to_guess)
@@ -111,6 +120,9 @@ class DrawingApp:
         index = 0
         
         while index < 10:
+            # vypíše 10 nejpravděpodobnějších znaků podle AI
+            # Pokud je definovaný správný znak, tak tento znak a jeho pravděpodobnost podle AI vypiše zeleně a zbytek červeně
+
             m_index = np.argmax(predict)
 
             if self.selected_label == None:
@@ -128,6 +140,8 @@ class DrawingApp:
             index += 1
 
     def set_pixel(self, x_index, y_index, color, spread = None, erase = False):
+        # Nastaní pixel na hodnotu color
+        # Možnot barvit i okolní pixely pokud ja nastaven spread
 
         if y_index > 27 or x_index > 27:
             return
@@ -192,6 +206,8 @@ class DrawingApp:
 
 
     def create_ranking(self, ai_index = 11):
+        # Funkce vytvoří objekt AI a vytvoří label do kterých se zapisují tipy neuronové sítě
+
         self.characters = [i for i in range(10)]
         if charmap_path:
             charmap = open(charmap_path, "r")
@@ -222,6 +238,8 @@ class DrawingApp:
             
 
     def test_network(self, samples):
+        # Připraví data pro otesnování pomocí funkce ze souboru neural network
+
         self.testing_images = samples[0].reshape((samples[0].shape[0], ) + self.input_shape)
         self.testing_labels = samples[1]
 
@@ -237,6 +255,8 @@ class DrawingApp:
 
 
     def show_random_sample(self):
+        # vybere náhodné prvek z dat který zobrazí a do self.selected_label zapíše správný label
+
         self.clear()
         index = random.randint(0, len(self.testing_images)-1)
 
@@ -246,6 +266,7 @@ class DrawingApp:
         self.show_matrix(sample)
 
     def show_wrong_guess(self):
+        # vybere náhodné prvek z neuhodnutých dat neuronovou sítí který zobrazí a do self.selected_label zapíše správný label
         self.clear()
         index = random.randint(0, len(self.failed_labels)-1)
 
@@ -255,6 +276,8 @@ class DrawingApp:
         self.show_matrix(sample)
 
     def show_matrix(self, matrix):
+        # zobrazí vstupní matici, která má správné rozměry
+
         for y in range(matrix.shape[1]):
             for x in range(matrix.shape[0]):
                 self.set_pixel(x, y, matrix[y][x])
@@ -263,11 +286,15 @@ class DrawingApp:
 
 
 
+# načte testovacá data z MNIST souboru a upraví je
 mndata = MNIST("samples")
 _testing_images, testing_labels = mndata.load_testing()
 testing_images = np.array(_testing_images)/255
 
 testing_samples = (testing_images, testing_labels)
 
+# cesta na soubor, který ukazuje o jaký znak se jedná pro daný tipnutí index
 charmap_path = "samples/EMNIST/emnist-balanced-mapping.txt"
+
+# vytvoří objekt DrawingApp
 d = DrawingApp(charmap_path=charmap_path, testing_samples=testing_samples)

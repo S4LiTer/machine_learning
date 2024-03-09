@@ -9,6 +9,7 @@ import time
 
 
 
+# Připraví data pro trénink
 images, raw_labels = emnist.extract_training_samples("balanced")
 testing_images, raw_testing_labels = emnist.extract_test_samples("balanced")
 
@@ -23,10 +24,12 @@ testing_labels = np.zeros((raw_testing_labels.shape[0], np.max(raw_testing_label
 testing_labels[np.arange(len(raw_testing_labels)), raw_testing_labels] = 1
 
 
+
+# Vytvoří objekt neuronové sítě
 nn = neural_network.NeuralNetwork((1, 28, 28), True)
 nn.storeNetwork(17, "load")
 
-
+# Přesně nadefinuje neuronovou síť po vrstvách
 nn.add_convolutional_layer((3, 3), 8)
 nn.add_pooling_layer((2, 2))
 nn.add_convolutional_layer((2, 2), 16)
