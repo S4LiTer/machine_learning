@@ -14,6 +14,7 @@ class PoolingLayer:
         self.pooling_type = pooling_type
         self.output_size = (input_size[0], self.input_size[1] // self.pool_size[0], self.input_size[2] // self.pool_size[1])
 
+        self.pooled_matrix_size = (input_size[0], self.output_size[1]*self.pool_size[0], self.output_size[2]*self.pool_size[1])
 
         self.indicies = np.array([])
 
@@ -31,7 +32,7 @@ class PoolingLayer:
             input_matrix = input_matrix.reshape((1,) + self.input_size)
         batch_count = input_matrix.shape[0]
 
-        pooled_window = input_matrix[:batch_count, :self.output_size[0], :self.output_size[1]*self.pool_size[0], :self.output_size[2]*self.pool_size[1]]
+        pooled_window = input_matrix[:batch_count, :self.pooled_matrix_size[0], :self.pooled_matrix_size[1], :self.pooled_matrix_size[2]]
         
         # Reshapes the array to 5D array where are cubes of size self.pool_size[0], self.output_size[2], self.pool_size[1]
         # I am then able to find max value just on top side of the cube (along first and third axis)
@@ -78,40 +79,15 @@ class PoolingLayer:
         input_gradient = input_gradient.reshape(grad_shape + self.pool_size)
         input_gradient = input_gradient[:, :, :, :, ::-1, :]
         input_gradient = np.rot90(input_gradient, k=-1, axes=(4, 3))
-        input_gradient = input_gradient.reshape((grad_shape[0], ) + self.input_size)
+        input_gradient = input_gradient.reshape((grad_shape[0], ) + self.pooled_matrix_size)
 
+        if input_gradient.shape[1:] != self.input_size:
+            pad = (self.input_size[1] - input_gradient.shape[2], 
+                   self.input_size[2] - input_gradient.shape[3])
+            input_gradient = np.pad(input_gradient, ((0, 0), (0, 0), (0, pad[0]), (0, pad[1])))
+            
         self.indicies = np.array([])
         return input_gradient
     
 
-
-
-
-
-        """
-        input_gradients = np.zeros((output_gradient_list.shape[0],) + (self.input_size))
-
-        for output_index, output_gradient in enumerate(output_gradient_list):
-            input_gradient = np.zeros(self.input_size)
-
-            for channel_index, channel in enumerate(output_gradient):
-                for column_index, column in enumerate(channel):
-                    for row_index, row in enumerate(column):
-                        if self.pooling_type == pooling_types.average_pooling:
-                            first_pos = (column_index*self.pool_size[0], row_index*self.pool_size[1])
-                            last_pos = (first_pos[0] + self.pool_size[0], first_pos[1] + self.pool_size[1])
-
-                            input_gradient[channel_index, first_pos[0]:last_pos[0], first_pos[1]:last_pos[1]] = row/(self.pool_size[0] * self.pool_size[1])
-                        else:
-                            grad_pos = np.unravel_index(self.indicies[output_index][channel_index][column_index][row_index], self.pool_size)
-                            grad_pos = (channel_index, grad_pos[0]+column_index*self.pool_size[0], grad_pos[1]+row_index*self.pool_size[1])
-                            input_gradient[grad_pos] = row
-            
-
-
-            input_gradients[output_index] = input_gradient
-
-
-        return input_gradients
-        """
     

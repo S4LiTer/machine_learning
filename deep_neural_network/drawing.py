@@ -4,14 +4,23 @@ import tkinter as tk
 import numpy as np
 import threading
 import random
+
 try:
     from mnist import MNIST
     mnist_installed = True
 except:
     mnist_installed = False
 
+try:
+    import emnist
+    mnist_installed = True
+except:
+    mnist_installed = False
+
 class DrawingApp:
-    def __init__(self, width=504, height=504, sample_height=28, sample_width=28):
+    def __init__(self, width=504, height=504, sample_height=28, sample_width=28, charmap_path=None, testing_samples=None):
+        self.charmap_path = charmap_path
+
         self.width = width
         self.height = height
 
@@ -27,11 +36,13 @@ class DrawingApp:
         self.running = False
         threading.Thread(target=self.start_window).start()
 
-        if mnist_installed:
-            self.test_network()
 
         while not self.running:
             continue
+
+        if testing_samples:
+            self.show_random_btn["state"] = tk.ACTIVE
+            self.test_network(testing_samples)
         
 
 
@@ -51,14 +62,13 @@ class DrawingApp:
         self.reset_btn = tk.Button(self.root, text="Clear", command = self.clear)
         self.reset_btn.grid(row=21, column=0, pady = 10)
 
-
         self.create_ranking()
-        if mnist_installed:
-            self.show_random_btn = tk.Button(self.root, text="Show random sample", command = self.show_random_sample)
-            self.show_random_btn.grid(row=21, column=1, pady=10)
 
-            self.show_wrong_btn = tk.Button(self.root, text="Show random wrong guess", command = self.show_wrong_guess)
-            self.show_wrong_btn.grid(row=21, column=2, pady=10)
+        self.show_random_btn = tk.Button(self.root, text="Show random sample", command = self.show_random_sample, state=tk.DISABLED)
+        self.show_random_btn.grid(row=21, column=1, pady=10)
+
+        self.show_wrong_btn = tk.Button(self.root, text="Show random wrong guess", command = self.show_wrong_guess, state=tk.DISABLED)
+        self.show_wrong_btn.grid(row=21, column=2, pady=10)
 
 
         self.running = True
@@ -71,7 +81,6 @@ class DrawingApp:
         self.selected_label = None
         self.canvas.delete("all")
         self.pic = np.zeros((self.sample_width, self.sample_height))
-        self.askAI()
 
     def draw(self, event):
         x = event.x
@@ -80,7 +89,10 @@ class DrawingApp:
         x_index = int((x / self.width)  * self.sample_width)
         y_index = int((y / self.height) * self.sample_height)
 
-        self.set_pixel(x_index, y_index, 0.2, 0.01)
+        self.selected_label = None
+
+        self.set_pixel(x_index, y_index, 0.3, 0.02)
+        self.askAI()
 
     def erase(self, event):
         x = event.x
@@ -93,14 +105,13 @@ class DrawingApp:
 
     def askAI(self):
         to_guess = self.pic.copy()
-        to_guess = to_guess.reshape(784)
+        to_guess = to_guess.reshape(self.AI.network_input)
         predict = self.AI.Calculate(to_guess)
-        predict = predict.tolist()
 
         index = 0
+        
         while index < 10:
-            m = max(predict)
-            m_index = predict.index(m)
+            m_index = np.argmax(predict)
 
             if self.selected_label == None:
                 self.labels[index].config(fg="#FFFFFF")
@@ -112,7 +123,7 @@ class DrawingApp:
             prob = round(predict[m_index] * 100, 2)
             predict[m_index] = 0
 
-            self.texts[index].set(f"{self.nums[m_index]}: {prob}")
+            self.texts[index].set(f"{self.characters[m_index]}: {prob}")
 
             index += 1
 
@@ -141,7 +152,6 @@ class DrawingApp:
         self.canvas.create_rectangle(x_start, y_start, x_end, y_end, fill=hex_color, outline="")
 
         if spread == None:
-            self.askAI()
             return
 
         for _spr_x in range(3):
@@ -180,9 +190,15 @@ class DrawingApp:
 
                 self.canvas.create_rectangle(x_start, y_start, x_end, y_end, fill=hex_spread, outline="")
 
-        self.askAI()
 
-    def create_ranking(self, ai_index = 3):
+    def create_ranking(self, ai_index = 11):
+        self.characters = [i for i in range(10)]
+        if charmap_path:
+            charmap = open(charmap_path, "r")
+            lines = charmap.read().split('\n')[:-1]
+            self.characters = [chr(int(line.split(" ")[1])) for line in lines]
+
+
         label_text = tk.StringVar()
         label = tk.Label(self.root, textvariable=label_text, font=('Arial', 30), bg="#252525", fg="#FFFFFF")
         label_text.set("AI predicts:")
@@ -190,39 +206,42 @@ class DrawingApp:
 
         self.labels = []
         self.texts = []
-        self.nums = ("Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine")
-
         for i in range(10):
             self.texts.append(tk.StringVar())
             self.labels.append(tk.Label(self.root, textvariable=self.texts[i], font=('Arial', 20), bg="#252525", fg="#FFFFFF"))
-            self.texts[i].set(f"{self.nums[i]}: 0%")
+            self.texts[i].set(f"{self.characters[i]}: 0%")
             self.labels[i].grid(row = i+1, column = 4, sticky="w", padx=30)
 
 
         self.AI = neural_network.NeuralNetwork(0, plot=False)
         self.AI.storeNetwork(ai_index, "load")
 
-    def test_network(self):
-        mndata = MNIST("samples")
-        _testing_images, self.testing_labels = mndata.load_testing()
-        testing_images = np.array(_testing_images)/255
-        self.testing_images = preprocessing.preprocess_array(testing_images)
+        self.input_shape = self.AI.network_input
+        if type(self.AI.network_input) == int:
+            self.input_shape = (self.AI.network_input, )
+            
+
+    def test_network(self, samples):
+        self.testing_images = samples[0].reshape((samples[0].shape[0], ) + self.input_shape)
+        self.testing_labels = samples[1]
 
         testing_labels = []
         for label in self.testing_labels:
             exp = np.array([0. for _ in range(10)])
             exp[label] = 1.
             testing_labels.append(exp)
-        testing_labels = np.array(testing_labels)
+        self.testing_labels = np.array(testing_labels)
 
-        self.failed_samples, self.failed_labels = self.AI.Test(self.testing_images, testing_labels)
+        self.failed_samples, self.failed_labels = neural_network.Test(self.AI, self.testing_images, self.testing_labels, self.charmap_path)
+        self.show_wrong_btn["state"] = tk.ACTIVE
+
 
     def show_random_sample(self):
         self.clear()
-        index = random.randint(0, len(self.testing_labels)-1)
+        index = random.randint(0, len(self.testing_images)-1)
 
         sample = self.testing_images[index].reshape(28, 28)
-        self.selected_label = self.testing_labels[index]
+        self.selected_label = np.argmax(self.testing_labels[index])
 
         self.show_matrix(sample)
 
@@ -232,7 +251,7 @@ class DrawingApp:
 
         sample = self.failed_samples[index].reshape(28, 28)
         self.selected_label = self.failed_labels[index]
-
+        
         self.show_matrix(sample)
 
     def show_matrix(self, matrix):
@@ -240,5 +259,15 @@ class DrawingApp:
             for x in range(matrix.shape[0]):
                 self.set_pixel(x, y, matrix[y][x])
 
+        self.askAI()
 
-d = DrawingApp()
+
+
+mndata = MNIST("samples")
+_testing_images, testing_labels = mndata.load_testing()
+testing_images = np.array(_testing_images)/255
+
+testing_samples = (testing_images, testing_labels)
+
+charmap_path = "samples/EMNIST/emnist-balanced-mapping.txt"
+d = DrawingApp(charmap_path=charmap_path, testing_samples=testing_samples)

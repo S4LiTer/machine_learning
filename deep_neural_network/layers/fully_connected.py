@@ -40,11 +40,17 @@ class FullyConnectedLayer:
 
     
 
-    def forward_pass(self, input_neurons: np.ndarray, save_inputs = False) -> np.ndarray:
-        if save_inputs:
-            self.all_inputs = input_neurons
+    def forward_pass(self, input_values: np.ndarray, save_inputs = False) -> np.ndarray:
+        z = self.calculate_z(input_values)
 
-        z = self.calculate_z(input_neurons, flip=False)
+        if save_inputs:
+            self.past_z = z
+            self.all_inputs = input_values
+
+            if len(self.past_z.shape) == 1:
+                self.past_z = self.past_z.reshape((-1, self.past_z.shape[0]))
+                self.all_inputs = self.all_inputs.reshape((-1, self.all_inputs.shape[0]))
+
         result = self.act(z)
         if len(result.shape) == 2 and result.shape[0] == 1:
             result = result.reshape(-1)
@@ -57,12 +63,15 @@ class FullyConnectedLayer:
         self.bp_biases = np.zeros_like(self.biases)
         input_gradients = np.zeros((output_gradient_list.shape[0], self.input_size))
 
+        if self.layer_data["activation"] != "softmax":
+            print(output_gradient_list.shape)
+            print(self.all_inputs.shape)
 
         for input_index, output_gradient in enumerate(output_gradient_list):
             last_input = self.all_inputs[input_index]
             z = None
             if self.layer_data["activation"] != "softmax":
-                z = self.calculate_z(last_input, flip=True)
+                z = self.past_z[input_index]
                 z = self.der_act(z)
                 z= np.multiply(z, output_gradient)
             else:
@@ -78,7 +87,9 @@ class FullyConnectedLayer:
 
         self.bp_weights = self.bp_weights/len(output_gradient_list)
         self.bp_biases = self.bp_biases/len(output_gradient_list)
+
         self.all_inputs = []
+        self.past_z = []
 
         if self.optimizer == "RMSprop":
             self.RMSprop(learning_rate)
@@ -88,8 +99,7 @@ class FullyConnectedLayer:
         return input_gradients
 
 
-    def calculate_z(self, prev_layer: np.ndarray, flip=False) -> np.ndarray:
-        # sketchy AH sektor...
+    def calculate_z(self, prev_layer: np.ndarray) -> np.ndarray:
         if len(prev_layer.shape) == 1:
             product = np.dot(self.weights, prev_layer)
             z = np.add(product, self.biases)

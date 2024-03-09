@@ -97,7 +97,7 @@ def rotate_random(matrix):
 
     return rotated_matrix
 
-def scale_random(matrix, min_scale=0.46):
+def scale_random(matrix, min_scale=0.65):
     scale = random.uniform(1, min_scale)
 
     scaled_matrix = np.zeros(matrix.shape)
@@ -138,7 +138,7 @@ def preprocess_array(default_array):
     return output 
 
 
-def add_noise(matrix, max_value=0.1, max_count=80):
+def add_noise(matrix, max_value=0.25, max_count=80):
     channel = random.randint(0, matrix.shape[0]-1)
     column = random.randint(0, matrix.shape[1]-1)
     row = random.randint(0, matrix.shape[2]-1)

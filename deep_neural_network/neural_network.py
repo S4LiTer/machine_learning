@@ -1,4 +1,5 @@
 from utils import activation_functions as act_funcs
+import matplotlib.pyplot as plt
 from utils import preprocessing
 from utils import display
 import numpy as np
@@ -144,26 +145,17 @@ class NeuralNetwork:
 
     def Train(self, samples: np.ndarray, labels, testing_samples, testing_labels, batch_size: int, learning_rate: float, gens: int):
         samples_count = len(samples)
-        noised_samples = samples.copy()
 
         for gen in range(gens):
-            """
-            if gen%5 == 0:
-                st = time.time()
-                print("adding noise to all samples")
-                noised_samples = samples.copy()
-                for i, sample in enumerate(noised_samples):
-                    noised_samples[i] = preprocessing.add_noise(sample, max_value=0.075, max_count=60)
-
-                print(f"noise added in {round(time.time() - st)} s")
-            """
             i = 0
-
             gen_start_time = time.time()
 
             permutation = np.random.permutation(samples_count)
-            shuffled_samples = noised_samples[permutation]
+
+
+            shuffled_samples = samples[permutation]
             shuffled_labels = labels[permutation]
+
 
             batch_number = 0
             batch_count = samples_count//batch_size
@@ -202,84 +194,59 @@ class NeuralNetwork:
             gen_total_time = time.time() - gen_start_time
             print("gen:", str(gen) + ", time to calculate: ", round(gen_total_time, 1), "s")
             if self.plot:
-                testing_accouracy, testing_loss = self.GetAccouracy(testing_samples[:4000], testing_labels[:4000])
-                accouracy, loss = self.GetAccouracy(samples[:4000], labels[:4000])
+                
+                testing_accouracy = self.GetAccouracy(testing_samples[:4000], testing_labels[:4000])
+                accouracy = self.GetAccouracy(samples[:4000], labels[:4000])
 
-                print("accouracy:", str(round(accouracy, 2))+"%, loss:", str(round(loss, 0)))
-                print("Testing accouracy:", str(round(testing_accouracy, 2))+"%, testing loss:", str(round(testing_loss, 0)))
+                print("accouracy:", str(round(accouracy, 2))+"% || Testing accouracy:", str(round(testing_accouracy, 2))+"%")
             
                 self.graph.add_point(accouracy, 0)
                 self.graph.add_point(testing_accouracy, 1)
 
 
-
-
-    def CalculateLoss(self, samples, labels):
-        total_loss = 0
-
-        index = 0
-        for sample in samples:
-            y = labels[index]
-            index += 1
-
-            res = self.Calculate(sample)
-            total_loss -= np.sum(y * np.log(res))
-
-        return total_loss
-
     def GetAccouracy(self, samples, labels):
-        start_time = time.time()
-        label_index = 0
-        total_correct = 0
+        results = self.Calculate(samples)
+        results = np.argmax(results, axis=1)
+        ind_labels = np.argmax(labels, axis=1)
+        
+        accouracy = np.sum(results == ind_labels)/len(results)
 
-        total_loss = 0
-
-        for sample in samples:
-            label = labels[label_index]
-            label_index += 1
-
-            res = self.Calculate(sample)
-            correct_index = np.where(label == max(label))[0].astype(int)[0]
-            guess_index = np.where(res == max(res))[0].astype(int)[0]
-
-            cost = np.subtract(res, label)**2
-            total_loss += np.sum(cost, axis=0)
+        return accouracy*100
 
 
-            if guess_index == correct_index:
-                total_correct += 1
 
-        total_accouracy = round(total_correct/len(labels), 4)*100
-        return total_accouracy, total_loss
-        #print(f"accouracy: {total_accouracy}, time: {time.time() - start_time}")
+def Test(nn, samples, labels, charmap_path = None):
+        characters = None
+        if charmap_path:
+            charmap = open(charmap_path, "r")
+            lines = charmap.read().split('\n')[:-1]
+            characters = [chr(int(line.split(" ")[1])) for line in lines]
 
 
-    def Test(self, samples, labels):
-        predicts = self.Calculate(samples)
-        correct = 0
+        predicts = nn.Calculate(samples)
 
         failed_samples = []
         failed_labels = []
+
         total_output_classes = np.zeros((labels.shape[1:]))
         correct_output_classes = np.zeros((labels.shape[1:]))
 
 
-        for label, predict in zip(predicts, labels):
+        for sample, label, predict in zip(samples, labels, predicts):
             total_output_classes[np.argmax(label)] += 1
 
             if np.argmax(label) == np.argmax(predict):
                 correct_output_classes[np.argmax(label)] += 1
                 continue
             
-            failed_samples.append(predict)
-            failed_labels.append(label)
-
+            failed_samples.append(sample)
+            failed_labels.append(np.argmax(label))
+            
         for index, output_class in enumerate(total_output_classes):
-            print(f"Number {index}: {round((correct_output_classes[index]/output_class)*100, 1)}% ({int(correct_output_classes[index])}/{int(output_class)})")
+            char = index
+            if characters:
+                char = characters[index]
+            print(f"{char}: {round((correct_output_classes[index]/output_class)*100, 1)}% ({int(correct_output_classes[index])}/{int(output_class)})")
         
         print(f"total accouracy: {round((np.sum(correct_output_classes)/np.sum(total_output_classes))*100, 1)}% ({int(np.sum(correct_output_classes))}/{int(np.sum(total_output_classes))})")
         return failed_samples, failed_labels
-
-
-
-
