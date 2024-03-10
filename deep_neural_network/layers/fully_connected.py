@@ -28,6 +28,7 @@ class FullyConnectedLayer:
 
 
     def storeValues(self, order: int, id: int, action: str, path: str):
+        # Uloží hodnoty vah a vychýlení
         name_weights = f"{path}{id}_{order}_w.npy"
         name_biases = f"{path}{id}_{order}_b.npy"
         
@@ -41,8 +42,12 @@ class FullyConnectedLayer:
     
 
     def forward_pass(self, input_values: np.ndarray, save_inputs = False) -> np.ndarray:
+        # Dopředný průchod. Vypočítá výsledek vrtvy podle vstupu
+        # Funkce dokáže pracovat s daty více vzorků najednou.
+
         z = self.calculate_z(input_values)
 
+        # Uloží vstupy a výstup před aktivační funkcí pro použití při učení
         if save_inputs:
             self.past_z = z
             self.all_inputs = input_values
@@ -51,7 +56,10 @@ class FullyConnectedLayer:
                 self.past_z = self.past_z.reshape((-1, self.past_z.shape[0]))
                 self.all_inputs = self.all_inputs.reshape((-1, self.all_inputs.shape[0]))
 
+
+
         result = self.act(z)
+
         if len(result.shape) == 2 and result.shape[0] == 1:
             result = result.reshape(-1)
         return result
@@ -59,17 +67,20 @@ class FullyConnectedLayer:
     
 
     def backward_pass(self, output_gradient_list, learning_rate: float):
+        # Zpětné šíření chyby -> upraví hodnoty kernelů a vychýlení
+
+        # předdefinuje matice pro gradienty
         self.bp_weights = np.zeros_like(self.weights)
         self.bp_biases = np.zeros_like(self.biases)
         input_gradients = np.zeros((output_gradient_list.shape[0], self.input_size))
 
-        if self.layer_data["activation"] != "softmax":
-            print(output_gradient_list.shape)
-            print(self.all_inputs.shape)
 
+        # Projde gradient pro všechny vzorky a podle nich vypočítá gradient vah a vychýlení
         for input_index, output_gradient in enumerate(output_gradient_list):
             last_input = self.all_inputs[input_index]
             z = None
+
+            # Pokud je toto výstupní vrsta (používá softmax) tak je output_gradient shodný s gradientem výsledku před aktivační funkcí
             if self.layer_data["activation"] != "softmax":
                 z = self.past_z[input_index]
                 z = self.der_act(z)
@@ -85,6 +96,7 @@ class FullyConnectedLayer:
             input_gradients[input_index] = np.dot(self.weights.T, z)
 
 
+        # Zprůměruje gradienty a pomocí gradientního sestupu upraví jejich hodnoty
         self.bp_weights = self.bp_weights/len(output_gradient_list)
         self.bp_biases = self.bp_biases/len(output_gradient_list)
 
@@ -100,6 +112,8 @@ class FullyConnectedLayer:
 
 
     def calculate_z(self, prev_layer: np.ndarray) -> np.ndarray:
+        # Vypočítá výsledek vrstvy před aktivační funkcí
+
         if len(prev_layer.shape) == 1:
             product = np.dot(self.weights, prev_layer)
             z = np.add(product, self.biases)

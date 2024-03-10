@@ -27,7 +27,7 @@ testing_labels[np.arange(len(raw_testing_labels)), raw_testing_labels] = 1
 
 # Vytvoří objekt neuronové sítě
 nn = neural_network.NeuralNetwork((1, 28, 28), True)
-nn.storeNetwork(17, "load")
+#nn.storeNetwork(17, "load")
 
 # Přesně nadefinuje neuronovou síť po vrstvách
 nn.add_convolutional_layer((3, 3), 8)

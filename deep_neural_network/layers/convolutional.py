@@ -43,6 +43,8 @@ class ConvolutionalLayer:
 
 
     def storeValues(self, order: int, id: int, action: str, path: str):
+        # Načte hodnoty vychýlení a kernelů
+
         name_kernels = f"{path}{id}_{order}_k.npy"
         name_biases = f"{path}{id}_{order}_b.npy"
         
@@ -55,7 +57,9 @@ class ConvolutionalLayer:
 
 
     def forward_pass(self, input_matrix: np.ndarray, save_inputs = False):
+        # Provene konvoluci
 
+        # kontrola vstupních rozměrů
         if len(input_matrix.shape) == len(self.input_size):
             input_matrix = input_matrix.reshape((1,) + self.input_size)
 
@@ -63,12 +67,16 @@ class ConvolutionalLayer:
             print(f"[ERROR] invalid input shape to predict function (expected: {self.input_size}, given: {input_matrix.shape[1:]})")
 
 
+        # Předdefinuje matici pro výstup
         output = np.zeros((input_matrix.shape[0], ) + self.output_size)
 
         if save_inputs:
+            # Uloží výstupní hodnoty před aktivačí funkcí a vstupy 
             self.past_z = np.zeros((input_matrix.shape[0], ) + self.output_size)
             self.past_inputs = input_matrix
 
+
+        # Provede pro každý kanál zvlášť korelaci a výsledek nechá projít aktivační funkcí
         for index, input_mat in enumerate(input_matrix):
             z = self.calculate_z(input_mat)
 
@@ -78,43 +86,25 @@ class ConvolutionalLayer:
             output[index] = self.act(z)
 
         return output
-        fig, axs = plt.subplots(3, 3, figsize=(10, 3))
-
-        # Display each image on a subplot
-        axs[0][0].imshow(input_matrix[0][0], cmap='gray')
-
-        axs[0][1].imshow(output[0][0], cmap='gray')
-
-        axs[0][2].imshow(output[0][1], cmap='gray')
-
-        axs[1][0].imshow(output[0][2], cmap='gray')
-
-        axs[1][1].imshow(output[0][3], cmap='gray')
-        axs[1][2].imshow(self.kernels[0][0], cmap='gray')
-
-        axs[2][0].imshow(self.kernels[1][0], cmap='gray')
-
-        axs[2][1].imshow(self.kernels[2][0], cmap='gray')
-
-        axs[2][2].imshow(self.kernels[3][0], cmap='gray')
-
-        plt.show()
 
     
     def backward_pass(self, output_gradient_list, learning_rate: float):
+        # Zpětné šíření chyby -> upraví hodnoty kernelů a vychýlení
+
         self.bp_biases = np.zeros(self.output_size)
         self.bp_kernels = np.zeros_like(self.kernels)
         input_gradients = np.zeros((output_gradient_list.shape[0],) + self.input_size)
 
-        # iterates through all recived output gradients and connects then with stored inputs/z
-        # it sums all calculated gradients from discrete samples
+        # Projde všechny kanály gradientů
         for output_index, output_gradient in enumerate(output_gradient_list):
-            z_gradient = np.multiply(self.past_z[output_index], output_gradient)
+            z_gradient = np.multiply(self.der_act(self.past_z[output_index]), output_gradient)
 
+            # Gradint vychýlení je stejný jako gradient před aktivační funkcí
             self.bp_biases = np.add(self.bp_biases, z_gradient)
 
             kernel_index = 0
 
+            # Pro každý kernel vypočte gradient hodnot v kernelu a gradient vstupů
             while kernel_index < self.kernel_count:
                 self.bp_kernels[kernel_index] = np.add(self.bp_kernels[kernel_index], self.calculate_kernel_gradient(z_gradient[kernel_index], kernel_index, output_index))
                 
@@ -123,7 +113,7 @@ class ConvolutionalLayer:
 
 
 
-            
+        # Zprůměruje gradienty kernelů a vychýlení a následné pomocí gradientního sestupu upraví jejich hodnoty
         self.bp_biases = self.bp_biases/len(output_gradient_list)
         self.bp_kernels = self.bp_kernels/len(output_gradient_list)
         
@@ -133,6 +123,7 @@ class ConvolutionalLayer:
             self.gradient_descent(learning_rate)
 
 
+        # Vymeže uložené data
         self.past_inputs = np.array([])
         self.past_z = np.array([])
 
@@ -140,6 +131,10 @@ class ConvolutionalLayer:
 
 
     def calculate_kernel_gradient(self, z_gradient: np.ndarray, kernel_index: int, output_index: int) -> np.ndarray:
+        # Funkce slouží pro výpočet gradientu kernelu
+        # Gradient kernelu můžeme dostat pokud provedeme korelaci gradientu výsledku vrstvy (před aktivační funkcí) po vstupu (gradient je pohybující se kernel). 
+        # Pokud používáme same kovoluci, musíme přidat padding, abychom zachovali velikost kernelu
+
         padded_input = self.past_inputs[output_index]
 
         if self.correlation_type == conv_types.same:
@@ -153,13 +148,19 @@ class ConvolutionalLayer:
         return self.correlate(padded_input, z_gradient, "valid")
 
     def calculate_input_gradient(self, z_gradient: np.ndarray, kernel_index: int) -> np.ndarray:
+        # Vypočítá gradient vstupu pomocí konvoluce (kernel je otočen a 180 stupnu)
+
         gradient = np.zeros(self.input_size)
 
+        # Abychom zachovali velikost vstupu musíme správně určit typ konvoluce
         convolution_type = "same"
         if self.correlation_type == "valid":
             convolution_type = "full"
 
         layer_index = 0
+        # Pro každou matici v kernelu provede konvoluci přes gradient výstupu před aktivační funkčí
+        # Protože jeden kernel má stejný počet kanalu jako je vstupních matic, provedeme konvoluci tolikrát jako je vstupních kanalu
+        # takže budeme mít gradient pro každý kanal
         for kernel_layer in self.kernels[kernel_index]:
             gradient[layer_index] = sp.convolve2d(z_gradient, kernel_layer, convolution_type)
 
@@ -169,37 +170,35 @@ class ConvolutionalLayer:
 
 
     def calculate_z(self, input_matrix: np.ndarray):
-        """
-        This function calculates z (result before activation function)
-        Returns: 3D numpy array with size matching defined output_size
-        """
+        # Vypočítá výsledek sítě před aktivační funkcí
 
 
-
-        # defines 3D array with output dimesions
+        # předdefinuje matici výsledků
         z = np.empty(self.output_size)
 
-        # iterates through kernels and adds result of correlation to corresponding position in z array
+        # Projde všechny kernely. Každý kernel vytvoří jeden výstupní kanál
         kernel_index = 0
         for kernel in self.kernels:
             
             conv_result = self.correlate(input_matrix, kernel, self.correlation_type)
 
-            # sums results of convolutions by one kernel over z axis to one 2D matrix which is stored to predefined z array
+            # Sečte výsledek korelací ze všech kanálů v jednom kernelu
             z[kernel_index] = np.sum(conv_result, axis=0)
 
 
             kernel_index += 1
 
+        # přičte vychýlení k výsledku
         z = np.add(z, self.biases)
 
         return z
 
     def correlate(self, input_matrix: np.ndarray, kernel: np.ndarray, correlation_type: str):
-        """
-        This function is used to correlate two equally deep matrixes (kernel and input_matrix)
-        Returns: 3D numpy array with same depth and width and height defined by correlation
-        """
+        # Tato funkce vypočítá korolaci dvou matic.
+        # Pokud má kernel stejný počet kanálů jako input_matrix, 
+        # bude počet výstupních matic shodný s počtem kanálů
+
+        # Pokud má input_matrix více kanálů a kernel pouze jeden, provede se korelace kernelu po všech kanálech vstupní matice
 
         kernel_shape = kernel.shape
         if len(kernel_shape) == 3:
@@ -209,11 +208,10 @@ class ConvolutionalLayer:
         result_size = (input_matrix.shape[0],) + self.calculate_output_size(input_matrix.shape[1:], kernel_shape, correlation_type)
 
 
-        # defines 3D array for one kernel correlation output (z axis is defined by input depth)
         conv_result = np.empty(result_size)
         index = 0
         
-        # iterates through all inputs
+        # Projde všechny vstupy a provede na nich korelaci
         while index < self.input_size[0]:
 
             used_kernel = None
@@ -228,12 +226,7 @@ class ConvolutionalLayer:
         return conv_result
 
     def calculate_output_size(self, input_size: tuple, used_kernel_size: tuple, correlation_type: str) -> tuple:
-        """
-        Calculates matrix size after correlation
-        Reuturns: tuple with 2D size of matrix after correlation.
-
-        Depth does not depend on correlation
-        """
+        # Vypočítá velikost výstupu z vrstvy
 
         if correlation_type == conv_types.same:
             return (input_size[0], input_size[1])
@@ -253,6 +246,8 @@ class ConvolutionalLayer:
 
 
     def RMSprop(self, learning_rate: float): 
+        # Provede RMSprop podle matematického vzorce
+
         self.biases_M = np.add(self.beta*self.biases_M, (1-self.beta)* np.power(self.bp_biases, 2) )
 
         mlt = learning_rate/(np.sqrt(self.biases_M.copy()) + 0.00001)
@@ -268,31 +263,6 @@ class ConvolutionalLayer:
         mlt = np.multiply(mlt, self.bp_kernels)
         
         self.kernels = np.subtract(self.kernels, mlt)
-        
-        
-        return
-        fig, axs = plt.subplots(3, 3, figsize=(10, 3))
-
-        # Display each image on a subplot
-        axs[0][0].imshow(self.kernels[0][0], cmap='gray')
-
-        axs[0][1].imshow(self.kernels[1][0], cmap='gray')
-
-        axs[0][2].imshow(self.kernels[2][0], cmap='gray')
-
-        axs[1][0].imshow(self.kernels[3][0], cmap='gray')
-
-        """
-        axs[1][1].imshow(self.kernels[4][0], cmap='gray')
-        axs[1][2].imshow(self.kernels[5][0], cmap='gray')
-
-        axs[2][0].imshow(self.kernels[6][0], cmap='gray')
-
-        axs[2][1].imshow(self.kernels[7][0], cmap='gray')
-
-        axs[2][2].imshow(self.kernels[0][0], cmap='gray')"""
-
-        plt.show()
 
 
 

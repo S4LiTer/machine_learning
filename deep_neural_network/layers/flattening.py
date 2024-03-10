@@ -17,14 +17,16 @@ class FlatteningLayer:
 
     
     def storeValues(self, order, id, action, path):
-        """
-        there are no values but this function still has to be here because it is called from NeuralNetowrk class
-        """
+        # Tato vrstva nemá žádné hodnoty pro uložení, ale funkce tady musí být, aby bylo možné iterovat před všechny vrstvy a volat tuto funkci u každé
         
         return
     
 
     def forward_pass(self, input_matrix: np.ndarray, save_inputs=False) -> np.ndarray:
+        # Převede tvar to jednozorměrného vektoru.
+        # Pokud input_matrix zahrnuje více vzorků najednou (neboli jestli to je čtyřrozměrná matice), 
+        # převede data každého vzorku do vektoru zvlášt a výstupen bude dvojrozměrná matice
+
         if len(input_matrix.shape) == len(self.input_size):
             return input_matrix.reshape((self.output_size))
         
@@ -35,5 +37,6 @@ class FlatteningLayer:
             print("[ERROR] Invalid input to flattening layer")
     
     def backward_pass(self, output_gradient_list, learning_rate=0):
+        # Převede data pro každý vzorek do stejného tvaru, jako tvar vstupu do této vrstvy
         return output_gradient_list.reshape((output_gradient_list.shape[0],) + self.input_size)
         
