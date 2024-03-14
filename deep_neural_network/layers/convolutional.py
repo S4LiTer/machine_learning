@@ -16,8 +16,6 @@ class ConvolutionalLayer:
         self.der_act = activation["derivation"]
 
         self.correlation_type = correlation_type
-        self.optimizer = optimizer
-        self.beta = 0.85
 
         self.input_size = input_size
         self.output_size = (kernel_count,) + self.calculate_output_size(input_size[1:], kernel_size, self.correlation_type)
@@ -28,13 +26,16 @@ class ConvolutionalLayer:
         limit = math.sqrt(2/(self.kernel_size[0] * self.kernel_size[1] * self.kernel_size[2]))
         self.kernels = np.random.normal(0, limit, (kernel_count,) + self.kernel_size)
 
-        self.biases = np.zeros(self.output_size)
+        self.biases = np.random.random(self.output_size)
 
         self.kernels_M = np.zeros((kernel_count,) + self.kernel_size)
         self.biases_M = np.zeros(self.output_size)
  
         self.past_inputs = np.array([])
         self.past_z = np.array([])
+
+        self.optimizer = optimizer
+        self.beta = 0.85
 
         self.layer_data = {"layer_type": "convolutional", "output_size": self.output_size, 
                            "kernel_size": kernel_size, "kernel_count": kernel_count, 
@@ -106,9 +107,11 @@ class ConvolutionalLayer:
 
             # Pro každý kernel vypočte gradient hodnot v kernelu a gradient vstupů
             while kernel_index < self.kernel_count:
-                self.bp_kernels[kernel_index] = np.add(self.bp_kernels[kernel_index], self.calculate_kernel_gradient(z_gradient[kernel_index], kernel_index, output_index))
-                
-                input_gradients[output_index] = np.add(input_gradients[output_index], self.calculate_input_gradient(z_gradient[kernel_index], kernel_index))
+                kernel_gradient = self.calculate_kernel_gradient(z_gradient[kernel_index], output_index)
+                self.bp_kernels[kernel_index] = np.add(self.bp_kernels[kernel_index], kernel_gradient)
+
+                input_gradient = self.calculate_input_gradient(z_gradient[kernel_index], kernel_index)
+                input_gradients[output_index] = np.add(input_gradients[output_index], input_gradient)
                 kernel_index += 1
 
 
@@ -130,7 +133,7 @@ class ConvolutionalLayer:
         return input_gradients
 
 
-    def calculate_kernel_gradient(self, z_gradient: np.ndarray, kernel_index: int, output_index: int) -> np.ndarray:
+    def calculate_kernel_gradient(self, z_gradient: np.ndarray, output_index: int) -> np.ndarray:
         # Funkce slouží pro výpočet gradientu kernelu
         # Gradient kernelu můžeme dostat pokud provedeme korelaci gradientu výsledku vrstvy (před aktivační funkcí) po vstupu (gradient je pohybující se kernel). 
         # Pokud používáme same kovoluci, musíme přidat padding, abychom zachovali velikost kernelu

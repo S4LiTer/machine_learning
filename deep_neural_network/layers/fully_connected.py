@@ -10,8 +10,8 @@ class FullyConnectedLayer:
         self.output_size = output_neurons
         self.input_size = input_neurons
 
-        limit = math.sqrt(6.0/float(input_neurons))
-        self.weights = np.random.uniform(low=-limit, high=limit, size=(output_neurons, input_neurons))
+        limit = math.sqrt(2.0/float(input_neurons))
+        self.weights = np.random.normal(0, limit, size=(output_neurons, input_neurons))
         self.biases = np.random.random((output_neurons))
 
         self.weights_M = np.zeros((output_neurons, input_neurons))
@@ -81,7 +81,7 @@ class FullyConnectedLayer:
             z = None
 
             # Pokud je toto výstupní vrsta (používá softmax) tak je output_gradient shodný s gradientem výsledku před aktivační funkcí
-            if self.layer_data["activation"] != "softmax":
+            if self.der_act != None:
                 z = self.past_z[input_index]
                 z = self.der_act(z)
                 z= np.multiply(z, output_gradient)
@@ -89,9 +89,11 @@ class FullyConnectedLayer:
                 z = output_gradient
 
             weight_gradient = np.multiply(last_input, z[None, :].T)
+            
             self.bp_weights = np.add(self.bp_weights, weight_gradient)
 
             self.bp_biases = np.add(self.bp_biases, z)
+
 
             input_gradients[input_index] = np.dot(self.weights.T, z)
 

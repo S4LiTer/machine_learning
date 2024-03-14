@@ -19,15 +19,18 @@ class NeuralNetwork:
 
 
     def add_fully_connected_layer(self, output_size: int, activation_func="relu", optimizer="RMSprop"):
-        # Přidá plně propojrnou vrstvu do sítě
+        # Přidá plně propojenou vrstvu do sítě
         # Vstupní velikost je definována automaticky podle výstupu z předešlé vrstvy
 
         activation = act_funcs.functions[activation_func]
         
+        # Pokud jde o první vrstvu, použije jako velikost vstupu celkový vstup do sítě.
+        # Jinak použije ýstupz předešlé vrstvy
         input_size = self.network_input
         if len(self.layers) > 0:
             input_size = self.layers[-1].output_size
 
+        # Přidá vrstvu
         new_layer = layers.FullyConnectedLayer(input_size, output_size, activation, optimizer)
     
 

@@ -18,8 +18,9 @@ except:
     mnist_installed = False
 
 class DrawingApp:
-    def __init__(self, width=504, height=504, sample_height=28, sample_width=28, charmap_path=None, testing_samples=None):
+    def __init__(self, width=504, height=504, sample_height=28, sample_width=28, charmap_path=None, testing_samples=None, ai_id = 4):
         self.charmap_path = charmap_path
+        self.ai_id = ai_id
 
         self.width = width
         self.height = height
@@ -135,7 +136,7 @@ class DrawingApp:
             prob = round(predict[m_index] * 100, 2)
             predict[m_index] = 0
 
-            self.texts[index].set(f"{self.characters[m_index]}: {prob}")
+            self.texts[index].set(f"{self.characters[m_index]}: {prob}%")
 
             index += 1
 
@@ -205,7 +206,7 @@ class DrawingApp:
                 self.canvas.create_rectangle(x_start, y_start, x_end, y_end, fill=hex_spread, outline="")
 
 
-    def create_ranking(self, ai_index = 11):
+    def create_ranking(self):
         # Funkce vytvoří objekt AI a vytvoří label do kterých se zapisují tipy neuronové sítě
 
         self.characters = [i for i in range(10)]
@@ -230,7 +231,7 @@ class DrawingApp:
 
 
         self.AI = neural_network.NeuralNetwork(0, plot=False)
-        self.AI.storeNetwork(ai_index, "load")
+        self.AI.storeNetwork(self.ai_id, "load")
 
         self.input_shape = self.AI.network_input
         if type(self.AI.network_input) == int:
@@ -297,4 +298,7 @@ testing_samples = (testing_images, testing_labels)
 charmap_path = "samples/EMNIST/emnist-balanced-mapping.txt"
 
 # vytvoří objekt DrawingApp
-d = DrawingApp(charmap_path=charmap_path, testing_samples=testing_samples)
+ai = None
+while type(ai)!=int:
+    ai = int(input("Enter index of neural network you want to use: "))
+d = DrawingApp(charmap_path=charmap_path, testing_samples=testing_samples, ai_id=ai)
