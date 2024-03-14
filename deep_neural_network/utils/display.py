@@ -1,10 +1,20 @@
 import tkinter as tk
-import threading
+
+tkinter_installed = True
+try:
+    import threading
+except:
+    tkinter_installed = False
 import time
 
 
 class Window:
     def __init__(self, width, height, values_per_graph = 100):
+
+        if not tkinter_installed:
+            print("[ERROR] Tkinter is not installed. Please install it or diable plotting")
+            exit()
+
         self.width = width
         self.height = height
         self.values_per_graph = values_per_graph

@@ -4,6 +4,7 @@ import tkinter as tk
 import numpy as np
 import threading
 import random
+import os
 
 try:
     from mnist import MNIST
@@ -53,7 +54,7 @@ class DrawingApp:
 
         self.root = tk.Tk()
         self.root.geometry(f"{self.height+250}x{self.width+50}")
-        self.root.title("Learning progression")
+        self.root.title("Drawing")
         self.root.configure(background="#252525")
 
         self.canvas = tk.Canvas(self.root, height=self.height, width=self.width, bg="#000000", highlightthickness=0)
@@ -287,18 +288,25 @@ class DrawingApp:
 
 
 
-# načte testovacá data z MNIST souboru a upraví je
+# načte testovacá data pomocí EMNIST a upraví je
 mndata = MNIST("samples")
 _testing_images, testing_labels = mndata.load_testing()
 testing_images = np.array(_testing_images)/255
 
 testing_samples = (testing_images, testing_labels)
 
+
+available_ids = os.listdir("saved_networks")
+available_ids = set([int(i.split("_")[0]) for i in available_ids])
+
+ai = int(input("Enter index of neural network you want to use: "))
+
+while not ai in available_ids:
+    ai = int(input(f"Invalid or nonexisting index. Please try again: "))
+
+
+
 # cesta na soubor, který ukazuje o jaký znak se jedná pro daný tipnutí index
 charmap_path = "samples/EMNIST/emnist-balanced-mapping.txt"
-
 # vytvoří objekt DrawingApp
-ai = None
-while type(ai)!=int:
-    ai = int(input("Enter index of neural network you want to use: "))
 d = DrawingApp(charmap_path=charmap_path, testing_samples=testing_samples, ai_id=ai)

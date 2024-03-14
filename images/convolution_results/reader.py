@@ -1,7 +1,46 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import emnist
 import os
 
+
+# Připraví data pro trénink
+images, raw_labels = emnist.extract_training_samples("mnist")
+testing_images, raw_testing_labels = emnist.extract_test_samples("balanced")
+
+
+images = images.reshape((-1, 28, 28)) / 255
+labels = np.zeros((raw_labels.shape[0], np.max(raw_labels)+1))
+labels[np.arange(len(raw_labels)), raw_labels] = 1
+
+
+testing_images = testing_images.reshape((-1, 1, 28, 28)) / 255
+testing_labels = np.zeros((raw_testing_labels.shape[0], np.max(raw_testing_labels)+1))
+testing_labels[np.arange(len(raw_testing_labels)), raw_testing_labels] = 1
+
+fig, axs = plt.subplots(2, 4)
+axs[0][0].imshow(images[6], cmap='gray')
+
+axs[0][1].imshow(images[0], cmap='gray')
+
+axs[0][2].imshow(images[1], cmap='gray')
+
+axs[0][3].imshow(images[2], cmap='gray')
+
+axs[1][0].imshow(images[7], cmap='gray')
+
+axs[1][1].imshow(images[3], cmap='gray')
+
+axs[1][2].imshow(images[4], cmap='gray')
+
+axs[1][3].imshow(images[5], cmap='gray')
+
+plt.tight_layout()
+
+plt.show()
+
+
+exit()
 
 
 def show_1():
